@@ -1,14 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "date": "2026-11-08",
   "notes": [
-    "Setting a Vault PIN uses the number pad now, the same one that unlocks it. No keyboard opens, so nothing offers to save or fill a password over the PIN.",
-    "Backups work inside the app: saving one asks the phone where to keep it, and choosing one to import opens the phone file picker - which never opened before.",
-    "A file the phone labels unknown is no longer hidden from the picker.",
-    "The graph is titled what it shows, says how many notes and links it drew, and when there are none it says how to make one: write [[another note's title]]."
+    "The installed app updates itself now. It asks the UNote site once at launch, and when there is a newer version a chip says so: one tap fetches it, keeps it inside the app and reopens on it. No store, no APK to download, nothing to install.",
+    "The app asks the network for exactly two things: that update file, and the page when you take an update. Notes, the Vault, backups and attachments still never leave the phone.",
+    "Settings has one way back: \"Go back to the built-in version\" throws away a fetched page and returns to the copy that came inside the APK.",
+    "This is the one version that still has to be installed by hand - the version before it had no way to hear about updates. After this, the fixes arrive on their own."
   ],
   "history": [
+    {
+      "version": "1.0.11",
+      "date": "2026-11-08",
+      "title": "Updates that arrive on their own",
+      "notes": [
+        "The installed app updates itself now. It asks the UNote site once at launch, and when there is a newer version a chip says so: one tap fetches it, keeps it inside the app and reopens on it. No store, no APK to download, nothing to install.",
+        "The app asks the network for exactly two things: that update file, and the page when you take an update. Notes, the Vault, backups and attachments still never leave the phone.",
+        "Settings has one way back: \"Go back to the built-in version\" throws away a fetched page and returns to the copy that came inside the APK.",
+        "This is the one version that still has to be installed by hand - the version before it had no way to hear about updates. After this, the fixes arrive on their own."
+      ]
+    },
     {
       "version": "1.0.10",
       "date": "2026-11-08",

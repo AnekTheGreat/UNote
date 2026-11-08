@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- No INTERNET permission on purpose: the page needs nothing from the network. -->
+    <!-- Only for updates: one small JSON on launch, and the page itself when you take an
+         update. Notes, the Vault, backups and attachments never leave the phone. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

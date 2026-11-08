@@ -14,7 +14,11 @@ import android.webkit.WebView;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -24,25 +28,30 @@ import java.nio.charset.StandardCharsets;
  * https://appassets.androidplatform.net, not file://, because WebView refuses
  * IndexedDB and service workers on file:// - and the notes live in IndexedDB.
  *
- * Backups are the one thing the page cannot do by itself: a WebView has no download
- * manager and no file chooser unless the app supplies one. So the page calls into
- * window.UNoteFile, and this activity opens the phone's own save dialog and file
- * picker and carries the text across. Nothing leaves the phone.
+ * Two things a WebView cannot do on its own live here. Backups: the page calls into
+ * window.UNoteFile and this activity opens the phone's own save dialog and file
+ * picker. Updates: the page fetches the newest copy of itself from the app's site and
+ * leaves it in the app's private storage, and this activity serves that copy in place
+ * of the bundled one. Nothing leaves the phone except those requests.
  */
 public class MainActivity extends Activity {
 
     private static final String HOME = "https://appassets.androidplatform.net/assets/www/index.html";
+    private static final String PAGE_PATH = "/assets/www/index.html";
     private static final int REQ_SAVE = 41;
     private static final int REQ_PICK = 42;
 
     private WebView web;
     private String pendingText;
     private String pendingName;
+    private File otaFile;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+
+        otaFile = new File(new File(getFilesDir(), "ota"), "index.html");
 
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -60,6 +69,13 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClientCompat() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                String p = request.getUrl().getPath();
+                if (p != null && p.endsWith(PAGE_PATH)) {
+                    WebResourceResponse fetched = fetchedPage();
+                    if (fetched != null) {
+                        return fetched;             // the copy an update left behind
+                    }
+                }
                 return loader.shouldInterceptRequest(request.getUrl());
             }
                 @Override
@@ -87,12 +103,79 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** The fetched page, if there is one that still looks like UNote. */
+    private WebResourceResponse fetchedPage() {
+        if (otaFile == null || !otaFile.isFile()) {
+            return null;
+        }
+        try {
+            byte[] bytes = readFile(otaFile);
+            String head = new String(bytes, StandardCharsets.UTF_8);
+            if (bytes.length < 20000 || !head.contains("const VERSION = '")) {
+                return null;                    // a half-written file must never take the app down
+            }
+            return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(bytes));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /** What window.UNoteFile exposes to the page. */
     private class Files {
 
         @JavascriptInterface
         public boolean ready() {
             return true;
+        }
+
+        @JavascriptInterface
+        public boolean hasPage() {
+            return otaFile != null && otaFile.isFile();
+        }
+
+        @JavascriptInterface
+        public void savePage(final String html) {
+            if (html == null || html.length() < 20000 || !html.contains("const VERSION = '")) {
+                tell("window.UNoteSaved && window.UNoteSaved(false)");
+                return;
+            }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    boolean ok = false;
+                    File dir = otaFile.getParentFile();
+                    File tmp = new File(dir, "index.html.tmp");
+                    try {
+                        if (dir != null && !dir.isDirectory()) {
+                            dir.mkdirs();
+                        }
+                        FileOutputStream out = new FileOutputStream(tmp);
+                        out.write(html.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+                        out.close();
+                        ok = tmp.renameTo(otaFile) || (otaFile.delete() && tmp.renameTo(otaFile));
+                    } catch (Exception e) {
+                        ok = false;
+                    }
+                    tell(ok ? "window.UNoteSaved && window.UNoteSaved(true)"
+                            : "window.UNoteSaved && window.UNoteSaved(false)");
+                }
+            }).start();
+        }
+
+        @JavascriptInterface
+        public void resetPage() {
+            try {
+                if (otaFile != null && otaFile.exists()) {
+                    otaFile.delete();
+                }
+                File tmp = new File(otaFile.getParentFile(), "index.html.tmp");
+                if (tmp.exists()) {
+                    tmp.delete();
+                }
+            } catch (Exception ignored) {
+                // nothing to remove
+            }
         }
 
         @JavascriptInterface
@@ -209,6 +292,21 @@ public class MainActivity extends Activity {
                 tell("window.UNotePicked && window.UNotePicked(true)");
             }
         }).start();
+    }
+
+    private static byte[] readFile(File f) throws Exception {
+        FileInputStream in = new FileInputStream(f);
+        try {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                bo.write(buf, 0, n);
+            }
+            return bo.toByteArray();
+        } finally {
+            in.close();
+        }
     }
 
     private void tell(final String js) {
