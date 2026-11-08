@@ -252,6 +252,32 @@ function hexA(hex, a) {
   return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
 }
 
+function patchNotesDialog(justUpdated) {
+  const d = dialog({
+    cls: 'wide',
+    title: justUpdated ? 'What\'s new in ' + VERSION : 'Patch notes',
+    body: '<div id="pnBody"><div class="hint">Reading the notes…</div></div>',
+    foot: '<div class="grow"></div><button class="btn primary" data-close="1">Done</button>',
+  });
+  const body = $('#pnBody', d);
+  fetch('updates.json?t=' + nowMs())
+    .then(r => { if (!r.ok) throw new Error('no notes'); return r.json(); })
+    .then(data => {
+      const hist = (data.history || []).slice().sort((a, b) => cmpVer(b.version, a.version));
+      if (!hist.length) throw new Error('no notes');
+      body.innerHTML = hist.map(h => {
+        const here = h.version === VERSION;
+        return '<div class="setsec">' +
+          '<h4>' + esc(h.version) + (here ? ' <span class="pill acc" style="font-size:10px">you are here</span>' : '') + '</h4>' +
+          '<div class="sub">' + esc(h.title || '') + (h.date ? ' · ' + esc(h.date) : '') + '</div>' +
+          '<ul style="margin:8px 0 0 18px;padding:0">' +
+          (h.notes || []).map(n => '<li style="margin:5px 0;font-size:13px;line-height:1.45">' + esc(n) + '</li>').join('') +
+          '</ul></div>';
+      }).join('');
+    })
+    .catch(() => { body.innerHTML = '<div class="hint">The notes could not be read right now. They live in updates.json next to the app.</div>'; });
+}
+
 function settingsDialog() {
   const dlg = dialog({
     cls: 'wide',
@@ -287,6 +313,7 @@ function settingsDialog() {
       '<div class="setsec"><h4>Updates</h4><div class="sub">UNote updates itself over the air. Nothing to install.</div>' +
       '<div class="rowset"><span class="grow">Version <b id="setVer">' + VERSION + '</b></span>' +
       '<button class="btn" id="setCheck" style="padding:7px 12px;font-size:12px">Check now</button></div>' +
+      '<button class="listrow" data-whatsnew="1" style="margin-top:8px"><span class="grow"><span class="lr-t">Patch notes</span><span class="lr-s">What changed in every version, this one first.</span></span><span class="chev">\u203a</span></button>' +
       '<div id="setUpdMsg" class="hint" style="margin:8px 0 0">Last checked when this screen opened.</div></div>' +
 
       '<div class="setsec"><h4>About</h4><div class="sub">UNote - a notebook that links itself, with a vault that asks for a PIN. Made to be used for everything.</div>' +
@@ -746,6 +773,12 @@ async function boot() {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('#btnWhats, [data-whatsnew]');
+    if (b) { e.preventDefault(); e.stopPropagation(); patchNotesDialog(false); }
+  });
+  if (S.settings.seen && S.settings.seen !== VERSION) setTimeout(() => patchNotesDialog(true), 1100);
+  if (S.settings.seen !== VERSION) { S.settings.seen = VERSION; kvSet('settings', S.settings).catch(() => {}); }
   setTimeout(() => checkUpdate(false), 1200);
 
   // rail
