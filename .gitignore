@@ -1,0 +1,17 @@
+# Gradle
+.gradle/
+build/
+local.properties
+android/keystore.properties
+android/*.jks
+android/*.keystore
+
+# The page is copied into the APK at build time from the repository root
+android/app/src/main/assets/
+
+# Signing
+*.p12
+*.keystore
+
+# OS noise
+.DS_Store

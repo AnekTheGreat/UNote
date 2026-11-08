@@ -1,0 +1,82 @@
+import java.util.Properties
+
+plugins {
+    id 'com.android.application'
+}
+
+def appVersion = '1.0.2'
+
+// android/keystore.properties exists only in CI, written from repository secrets.
+def ks = new Properties()
+def ksFile = rootProject.file('keystore.properties')
+if (ksFile.exists()) {
+    ksFile.withInputStream { ks.load(it) }
+}
+
+android {
+    namespace 'app.unote'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'app.unote'
+        minSdk 23
+        targetSdk 34
+        versionCode 1002
+        versionName appVersion
+    }
+
+    signingConfigs {
+        release {
+            if (ks.storeFile) {
+                storeFile file(ks.storeFile)
+                storeType ks.storeType ?: 'jks'
+                storePassword ks.storePassword
+                keyAlias ks.keyAlias
+                keyPassword ks.keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ks.storeFile) {
+                signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            applicationIdSuffix ''
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    // Only for WebViewAssetLoader, which serves the bundled page from a real https
+    // origin: IndexedDB and service workers are refused on file:// URLs.
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
+
+// The page in the repository is the only copy: copy it into the APK at build time
+// instead of keeping a second one that can drift.
+def syncWebAssets = tasks.register('syncWebAssets', Sync) {
+    from(rootProject.file('..')) {
+        include 'index.html'
+        include 'sw.js'
+        include 'updates.json'
+        include 'manifest.webmanifest'
+        include 'icon.svg'
+        include 'icon-maskable.svg'
+    }
+    into layout.projectDirectory.dir('src/main/assets/www')
+}
+
+preBuild.dependsOn syncWebAssets
