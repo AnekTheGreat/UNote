@@ -1,0 +1,140 @@
+name: Patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version this patch ships, e.g. 1.0.3'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: patch
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    outputs:
+      built: ${{ steps.apply.outputs.built }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Find the patch
+        id: find
+        env:
+          V: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          N=$(printf '%s' "$V" | tr -d '.')
+          P="dev/patch-$N.py"
+          if [ ! -f "$P" ]; then
+            echo "::error::$P is not in the tree - nothing to apply."
+            exit 1
+          fi
+          echo "path=$P" >> "$GITHUB_OUTPUT"
+          if python3 "$P" --check > /dev/null 2>&1; then
+            echo "pending=no" >> "$GITHUB_OUTPUT"
+            echo "$V is already on the page."
+          else
+            echo "pending=yes" >> "$GITHUB_OUTPUT"
+            echo "$V is pending."
+          fi
+
+      - name: Apply it
+        id: apply
+        env:
+          P: ${{ steps.find.outputs.path }}
+          PENDING: ${{ steps.find.outputs.pending }}
+        run: |
+          set -euo pipefail
+          if [ "$PENDING" = yes ]; then
+            python3 "$P"
+            echo "built=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "built=no" >> "$GITHUB_OUTPUT"
+          fi
+          python3 "$P" --check
+          python3 dev/build.py --check
+
+      - name: The page it writes must parse
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re, subprocess, sys, tempfile
+          page = open('index.html', encoding='utf-8').read()
+          blocks = [b for b in re.findall(r'<script[^>]*>(.*?)</script>', page, re.S) if b.strip()]
+          if not blocks:
+              sys.exit('index.html has no script block')
+          for i, block in enumerate(blocks):
+              f = tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8')
+              f.write(block); f.close()
+              r = subprocess.run(['node', '--check', f.name], capture_output=True, text=True)
+              if r.returncode:
+                  sys.exit('script block %d does not parse:\n%s' % (i, r.stderr))
+          print('%d script block(s) parse' % len(blocks))
+          PY
+
+      - name: The versions agree
+        run: |
+          set -euo pipefail
+          V='${{ inputs.version }}'
+          python3 - "$V" <<'PY'
+          import json, re, sys
+          v = sys.argv[1]
+          page = open('index.html', encoding='utf-8').read()
+          js_ver = re.search(r"const VERSION = '([0-9.]+)'", page).group(1)
+          sw = open('sw.js', encoding='utf-8').read()
+          cache = re.search(r"unote-v([0-9.]+)", sw).group(1)
+          data = json.load(open('updates.json', encoding='utf-8'))
+          bad = [n for n, got in (('index.html', js_ver), ('sw.js', cache), ('updates.json', data['version'])) if got != v]
+          if bad:
+              sys.exit('these disagree with %s: %s' % (v, ', '.join(bad)))
+          hist = [h['version'] for h in data.get('history', [])]
+          if v not in hist:
+              sys.exit('updates.json has no history entry for %s' % v)
+          print('page, worker, updates.json and the notes all say %s' % v)
+          print('history: ' + ' <- '.join(hist))
+          PY
+
+      - name: Commit and push
+        if: steps.apply.outputs.built == 'yes'
+        run: |
+          set -euo pipefail
+          git config user.name 'UNote patch'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && { echo "nothing changed"; exit 0; }
+          git commit -m "Release ${{ inputs.version }}"
+          git push
+
+  publish:
+    needs: patch
+    if: needs.patch.outputs.built == 'yes'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
