@@ -2,7 +2,7 @@
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.7';
+const VERSION = '1.0.8';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -101,11 +101,13 @@ const S = {
 };
 
 const allNotes = () => (S.view === 'vault' ? S.vault.plain : S.notes);
+/* The Vault is a room, not a filter: while it is closed its notes are not in hand at all. */
+function vaultList() { return (S.vault.key && S.view === 'vault') ? S.vault.plain : []; }
 const findNote = id => S.notes.find(n => n.id === id) || S.vault.plain.find(n => n.id === id) || null;
 const findTitle = t => {
   const k = String(t || '').trim().toLowerCase();
   if (!k) return null;
-  return S.notes.concat(S.vault.plain).find(n => (n.title || '').trim().toLowerCase() === k) || null;
+  return allNotes().find(n => (n.title || '').trim().toLowerCase() === k) || null;
 };
 const tagOf = body => {
   const out = new Set();

@@ -19,8 +19,10 @@ const liveNotes = () => S.notes.filter(n => !n.deleted);
 function renderSide() {
   const body = $('#sideBody');
   const vault = S.view === 'vault';
-  const count = liveNotes().length + (S.vault.plain.length || 0);
-  $('#countLine').textContent = count + (count === 1 ? ' note' : ' notes') + (S.vault.on ? ' · vault' : '');
+  const count = liveNotes().length;
+  $('#countLine').textContent = vault
+    ? (S.vault.key ? S.vault.plain.length + (S.vault.plain.length === 1 ? ' note in the Vault' : ' notes in the Vault') : 'The Vault is locked')
+    : count + (count === 1 ? ' note' : ' notes');
   $('#vaultLine').textContent = vault
     ? (S.vault.key ? 'Vault · unlocked' : 'Vault · locked')
     : 'Your notes, on this device';
@@ -36,7 +38,7 @@ function renderSide() {
   if (S.vault.on) {
     h += '<button class="navrow' + (vault ? ' on' : '') + '" data-nav="vault">' +
       '<svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>' +
-      'Vault<span class="n">' + (S.vault.key ? S.vault.plain.length + ' open' : 'locked') + '</span></button>';
+      'Vault<span class="n">' + (vault ? 'close' : S.vault.key ? 'open' : 'locked') + '</span></button>';
   }
   h += '<button class="navrow' + (!vault && S.view === 'trash' ? ' on' : '') + '" data-nav="trash">' +
     '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>' +
@@ -55,7 +57,7 @@ function renderSide() {
   }
 
   const tags = {};
-  liveNotes().concat(S.vault.plain).forEach(n => tagOf(n.body).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
+  allNotes().filter(n => !n.deleted).forEach(n => tagOf(n.body).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
   const tnames = Object.keys(tags).sort((a, b) => tags[b] - tags[a]).slice(0, 14);
   if (tnames.length) {
     h += '<div class="sec">Tags</div><div style="padding:0 6px 4px">';
@@ -142,7 +144,7 @@ function renderRight() {
     return;
   }
   const title = noteTitle(n).toLowerCase();
-  const back = S.notes.concat(S.vault.plain).filter(o => o.id !== n.id && !o.deleted &&
+  const back = allNotes().filter(o => o.id !== n.id && !o.deleted &&
     wikiOut(o.body).some(t => t.toLowerCase() === title));
   const out = wikiOut(n.body);
   let h = '<div class="sec" style="margin:0 0 8px">Linked from</div>';
@@ -165,8 +167,10 @@ function renderRight() {
 async function openNote(id) {
   const n = findNote(id);
   if (!n) return;
+  if (n.vault && !S.vault.key) { unlockDialog(() => openNote(id)); return; }
   S.current = n;
-  S.view = n.vault ? 'vault' : S.view === 'vault' ? 'notes' : S.view;
+  if (n.vault) S.view = 'vault';
+  else if (S.view === 'vault') { lockVault(true); S.view = 'notes'; }
   closeSide();
   renderDoc(); renderSide();
 }
@@ -213,7 +217,7 @@ function openGraph() {
   wrap.hidden = false;
   G.canvas = $('#graph');
   G.ctx = G.canvas.getContext('2d');
-  const notes = S.notes.filter(n => !n.deleted).concat(S.vault.plain);
+  const notes = allNotes().filter(n => !n.deleted);
   const byTitle = {};
   notes.forEach(n => { byTitle[noteTitle(n).toLowerCase()] = n; });
   const W = G.canvas.clientWidth || window.innerWidth, H = G.canvas.clientHeight || window.innerHeight;
@@ -356,12 +360,12 @@ function drawPalette() {
   if (palMode === 'command') {
     COMMANDS.filter(c => !ql || c.k.toLowerCase().includes(ql))
       .forEach(c => palItems.push({ title: c.k, kind: 'Command', run: () => { closeDialog(); c.run(); } }));
-    sortNotes(liveNotes().concat(S.vault.plain)).filter(n => !ql || noteTitle(n).toLowerCase().includes(ql))
+    sortNotes(allNotes().filter(n => !n.deleted)).filter(n => !ql || noteTitle(n).toLowerCase().includes(ql))
       .slice(0, 40)
       .forEach(n => palItems.push({ title: noteTitle(n), kind: n.vault ? 'Vault' : 'Note', run: () => { closeDialog(); openNote(n.id); } }));
   } else {
     const hits = [];
-    S.notes.concat(S.vault.plain).forEach(n => {
+    allNotes().forEach(n => {
       if (n.deleted) return;
       const t = noteTitle(n), b = String(n.body || '');
       const inT = t.toLowerCase().includes(ql), inB = ql && b.toLowerCase().includes(ql);

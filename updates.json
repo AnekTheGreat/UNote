@@ -1,13 +1,23 @@
 {
   "app": "UNote",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "date": "2026-11-08",
   "notes": [
-    "The start is a welcome now: what UNote is, and one button that begins a note. It no longer opens by asking for a Vault PIN.",
-    "The Vault is a choice, not a step. It asks for its PIN the first time you open it, which is when the PIN means something.",
-    "The first note is short: tap it and type, how to link two notes, how to tag one, and where the Vault is."
+    "The Vault is a room now, not a filter. Its notes are only in front of you while you are inside it.",
+    "Close the Vault and it locks: no Vault title, tag, link or count shows anywhere else - not in search, the graph, or the note list.",
+    "Reset the Vault: from Settings or from the PIN screen. It says what a reset does, offers to save the notes as a text file first, and lets you set a new PIN straight away."
   ],
   "history": [
+    {
+      "version": "1.0.8",
+      "date": "2026-11-08",
+      "title": "The Vault is a room, and a way back in",
+      "notes": [
+        "The Vault is a room now, not a filter. Its notes are only in front of you while you are inside it.",
+        "Close the Vault and it locks: no Vault title, tag, link or count shows anywhere else - not in search, the graph, or the note list.",
+        "Reset the Vault: from Settings or from the PIN screen. It says what a reset does, offers to save the notes as a text file first, and lets you set a new PIN straight away."
+      ]
+    },
     {
       "version": "1.0.7",
       "date": "2026-11-08",

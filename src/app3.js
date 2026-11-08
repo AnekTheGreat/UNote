@@ -66,7 +66,7 @@ async function setupVaultPin(pin, ui, onDone) {
   const salt = randSalt();
   const key = await deriveKey(pin, salt, KDF_ITER);
   const verifier = await aesEnc(key, 'unote-vault-v1');
-  S.vault.salt = salt; S.vault.key = key;
+  S.vault.salt = salt; S.vault.key = key; S.vault.on = true;
   S.vault.verifier = { iv: verifier.iv, ct: verifier.ct };
   await kvSet('vault', { on: true, salt: salt, iter: KDF_ITER, verifier: S.vault.verifier });
   await decryptVault();
@@ -164,10 +164,10 @@ async function unlockDialog(after) {
         ui.bad(g.until ? 'Wrong PIN. Locked for a moment.' : 'Wrong PIN (' + (5 - (g.tries || 0)) + ' tries left)');
       }
     },
-    extra: '<div style="text-align:center"><button class="btn ghost" id="vaultForgot" style="font-size:12px;color:var(--dim2)">I forgot my PIN</button></div>',
+    extra: '<div style="text-align:center"><button class="btn ghost" id="vaultForgot" style="font-size:12px;color:var(--dim2)">Forgot the PIN? Reset the Vault</button></div>',
   });
   const f = $('#vaultForgot');
-  if (f) f.addEventListener('click', () => { closeDialog(); forgotPin(); });
+  if (f) f.addEventListener('click', () => { closeDialog(); resetVault(); });
 }
 
 async function decryptVault() {
@@ -196,24 +196,44 @@ function lockVault(quiet) {
   S.vault.key = null;
   S.vault.plain = [];
   if (S.current && S.current.vault) { S.current = null; renderDoc(); }
-  if (S.view === 'vault') { S.view = 'notes'; }
+  if (S.view === 'vault') { S.view = 'notes'; S.folder = ''; S.tag = ''; }
+  const gw = $('#graphwrap');
+  if (gw && !gw.hidden) closeGraph();
   renderSide();
-  if (!quiet) toast('Vault locked.');
+  if (!quiet) toast('Vault closed. Everything inside is locked away.');
 }
 
-async function forgotPin() {
+async function resetVault() {
+  const unlocked = !!S.vault.key;
   const d = dialog({
-    title: 'Open the Vault without the PIN',
-    body: '<div class="hint" style="margin-top:0">The Vault is sealed with a key made from your PIN. Without it, what is inside cannot be read - not by this app, not by anyone.</div>' +
-      '<div class="hint">The only way forward is to empty the Vault and set a new PIN. Everything outside the Vault is untouched.</div>',
-    foot: '<div class="grow"></div><button class="btn" data-close="1">Keep it locked</button><button class="btn danger" id="wipeVault">Empty the Vault</button>',
+    title: 'Reset the Vault',
+    body: '<div class="hint" style="margin-top:0">A reset takes the PIN off the Vault and empties it. Your other notes are not touched, and nothing outside the Vault changes.</div>' +
+      '<div class="hint">The PIN is the only key to what is inside. Nobody - not this app, not anyone - can read those notes without it, so a reset cannot keep them' + (unlocked ? '.' : ' - that is what makes the Vault private.') + '</div>' +
+      (unlocked ? '<button class="listrow" id="rvSave" style="margin-top:10px"><span class="grow"><span class="lr-t">Save the Vault notes first</span><span class="lr-s">One plain text file, so you can keep them.</span></span><span class="chev">\u203a</span></button>' : '') +
+      '<label class="field" style="margin-top:12px"><span>Type RESET to confirm</span><input id="rvWord" autocomplete="off" placeholder="RESET"></label>' +
+      '<div class="pinmsg" id="rvMsg"></div>',
+    foot: '<div class="grow"></div><button class="btn" data-close="1">Keep the Vault</button><button class="btn danger" id="rvGo" disabled>Reset the Vault</button>',
   });
-  $$('[data-close]', d).forEach(b => b.addEventListener('click', closeDialog));
-  $('#wipeVault', d).addEventListener('click', async () => {
+  const input = $('#rvWord', d), go = $('#rvGo', d);
+  input.addEventListener('input', () => { go.disabled = input.value.trim().toUpperCase() !== 'RESET'; });
+  const save = $('#rvSave', d);
+  if (save) save.addEventListener('click', () => saveVaultText());
+  go.addEventListener('click', async () => {
+    go.disabled = true; go.textContent = 'Resetting...';
     await wipeVault();
     closeDialog();
-    toast('Vault emptied. Set a new PIN when you open it.');
+    toast('Vault reset. Set a new PIN when you are ready.');
+    askNewPin(() => { lockVault(true); toast('New PIN set. The Vault starts empty.'); });
   });
+  setTimeout(() => { const f = $('#rvWord', d); if (f) f.focus(); }, 60);
+}
+
+function saveVaultText() {
+  const notes = S.vault.plain.slice();
+  if (!notes.length) { toast('The Vault is empty - there is nothing to save.'); return; }
+  const text = notes.map(n => '# ' + noteTitle(n) + '\n\n' + (n.body || '')).join('\n\n---\n\n');
+  downloadText('unote-vault-' + dayKey() + '.txt', text, 'text/plain');
+  toast(notes.length + (notes.length === 1 ? ' note' : ' notes') + ' from the Vault saved as a text file.', 4200);
 }
 
 async function wipeVault() {
@@ -344,7 +364,8 @@ function settingsDialog() {
       '<div class="rowset"><span class="grow">PIN</span>' +
       '<button class="btn" id="setChangePin" style="padding:7px 12px;font-size:12px">Change PIN</button>' +
       '<button class="btn" id="setLockNow" style="padding:7px 12px;font-size:12px">Lock now</button></div>' +
-      '<div class="hint" style="margin:8px 0 0">A forgotten PIN cannot be recovered, only emptied.</div></div>' +
+      '<button class="listrow" id="setResetVault" style="margin-top:8px;border-color:rgba(248,113,113,.35)"><span class="grow"><span class="lr-t" style="color:var(--err)">Reset the Vault</span><span class="lr-s">Take the PIN off and start the Vault again, empty. Notes outside it are not touched.</span></span><span class="chev">\u203a</span></button>' +
+      '<div class="hint" style="margin:8px 0 0">A forgotten PIN cannot be read back. A reset is the way in: it removes the PIN, empties the Vault, and lets you set a new one.</div></div>' +
 
       '<div class="setsec"><h4>Your data</h4><div class="sub">Nothing leaves this device unless you carry it out yourself.</div>' +
       '<button class="listrow" data-x="export"><span class="grow"><span class="lr-t">Export everything</span><span class="lr-s">One file: notes, folders, tags, settings and the sealed Vault.</span></span><span class="chev">›</span></button>' +
@@ -387,6 +408,7 @@ function settingsDialog() {
   });
   $('#setLockNow', dlg).addEventListener('click', () => { closeDialog(); lockVault(); });
   $('#setChangePin', dlg).addEventListener('click', () => { closeDialog(); changePin(); });
+  $('#setResetVault', dlg).addEventListener('click', () => { closeDialog(); resetVault(); });
   $('#setCheck', dlg).addEventListener('click', async () => {
     const m = await checkUpdate(true);
     const el = $('#setUpdMsg');
@@ -477,6 +499,15 @@ async function buildBundle() {
     notes: recs.filter(r => !r.vault),
     vault: meta && meta.on ? { on: true, salt: meta.salt, iter: meta.iter, verifier: meta.verifier, notes: recs.filter(r => r.vault) } : { on: false },
   };
+}
+
+function downloadText(name, text, type) {
+  const blob = new Blob([text], { type: type || 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 async function exportAll() {
@@ -824,10 +855,10 @@ async function boot() {
   // rail
   $$('#rail .rbtn[data-go]').forEach(b => b.addEventListener('click', () => {
     const go = b.dataset.go;
-    if (go === 'notes') { S.view = 'notes'; S.folder = ''; S.tag = ''; $('#side').classList.add('open'); renderSide(); }
+    if (go === 'notes') { if (S.vault.key) lockVault(true); S.view = 'notes'; S.folder = ''; S.tag = ''; $('#side').classList.add('open'); renderSide(); }
     if (go === 'search') palette('search');
     if (go === 'graph') openGraph();
-    if (go === 'tags') { S.view = 'tags'; S.folder = ''; renderSide(); }
+    if (go === 'tags') { if (S.vault.key) lockVault(true); S.view = 'tags'; S.folder = ''; renderSide(); }
     if (go === 'vault') goVault();
     if (go === 'settings') settingsDialog();
   }));
@@ -839,7 +870,8 @@ async function boot() {
     const nav = e.target.closest('[data-nav]');
     if (nav) {
       const v = nav.dataset.nav;
-      if (v === 'vault') { goVault(); return; }
+      if (v === 'vault') { if (S.view === 'vault' && S.vault.key) { lockVault(); return; } goVault(); return; }
+      if (S.vault.key) lockVault(true);
       S.view = v; S.folder = ''; S.tag = ''; renderSide(); return;
     }
     const note = e.target.closest('[data-note]');
@@ -1002,7 +1034,7 @@ function suggestUpdate(el) {
   const m = before.match(/\[\[([^\]\n]*)$/);
   if (!m) { suggestClose(); return; }
   const q = m[1].toLowerCase();
-  const items = sortNotes(liveNotes().concat(S.vault.plain))
+  const items = sortNotes(allNotes().filter(n => !n.deleted))
     .filter(n => noteTitle(n).toLowerCase().includes(q))
     .slice(0, 6);
   if (!items.length) { suggestClose(); return; }
