@@ -257,11 +257,11 @@ function hexA(hex, a) {
    phone's own browser or the Play Store: the app holds no network of its own, so a link that opened
    inside it would be a blank screen, and this way the note you were reading is still behind you. */
 const OTHER_APPS = [
-  ['FamTM', 'The family tree in your pocket: people, birthdays and photos, kept on the phone.', 'https://play.google.com/store/apps/details?id=com.FamTM.app', 'F'],
+  ['FamTM', 'The family tree in your pocket: people, birthdays and photos, kept on the phone.', 'https://github.com/AnekTheGreat/FamTM/releases/latest', 'F'],
   ['SideCut', 'A music player with its own equaliser and its own way of filing a library.', 'https://play.google.com/store/apps/details?id=com.SideCut.myapp', 'S'],
-  ['MeasureT', 'Elevation, location, a level and a converter, all on one screen.', 'https://play.google.com/store/apps/details?id=com.CompassEDC.myapp', 'M'],
-  ['My Hub', 'One screen that launches these apps and holds the update for each in one place.', 'https://github.com/AnekTheGreat/My-Hub/releases', 'H'],
-  ['UJournal', 'A journal for the days you bother to write down, from the same hand as the tree.', 'https://github.com/AnekTheGreat/Journal', 'J'],
+  ['MeasureT', 'Elevation, location, a level and a converter, all on one screen.', 'https://anekthegreat.github.io/Compass-EDC/', 'M'],
+  ['My Hub', 'One screen that launches these apps and holds the update for each in one place.', 'https://github.com/AnekTheGreat/My-Hub/releases/latest', 'H'],
+  ['UJournal', 'A journal for the days you bother to write down, from the same hand as the tree.', 'https://github.com/AnekTheGreat/Journal/releases/latest', 'J'],
 ];
 function otherAppsDialog() {
   const d = dialog({

@@ -1,14 +1,23 @@
 {
   "app": "UNote",
-  "version": "1.0.5",
-  "date": "November 8, 2026",
+  "version": "1.0.6",
+  "date": "2026-11-08",
   "notes": [
-    "Liquid glass: every panel, card and sheet is now a pane with a soft edge, a blur behind it and a line of light along the top, so the app reads as one surface instead of a stack of boxes.",
-    "Other apps: a new list - FamTM, SideCut, MeasureT, My Hub and UJournal - each with one honest line about it and one tap to open it. It sits in the footer and in Settings.",
-    "Calmer controls: rounder buttons, softer rows, a clearer accent, and the text size and accent colour you pick are still yours.",
-    "A link in that list opens in the phone browser or the Play Store and comes back to the note you were on; the app itself still asks the network for nothing."
+    "Other apps still lists the same five apps, in the same order, with the same lines.",
+    "My Hub and UJournal pointed at a repository page rather than the release a build installs from. Both now open the release, and MeasureT opens its page.",
+    "SideCut keeps its Play listing, which is the only listing in the family that is live."
   ],
   "history": [
+    {
+      "version": "1.0.6",
+      "date": "2026-11-08",
+      "title": "All five rows answer",
+      "notes": [
+        "Other apps still lists the same five apps, in the same order, with the same lines.",
+        "My Hub and UJournal pointed at a repository page rather than the release a build installs from. Both now open the release, and MeasureT opens its page.",
+        "SideCut keeps its Play listing, which is the only listing in the family that is live."
+      ]
+    },
     {
       "version": "1.0.5",
       "date": "November 8, 2026",
