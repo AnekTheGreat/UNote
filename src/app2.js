@@ -95,6 +95,7 @@ function renderDoc() {
   const doc = $('#doc'), empty = $('#empty');
   if (!n) {
     doc.hidden = true; empty.hidden = false;
+    $('#pv').innerHTML = '';
     $('#crumbs').innerHTML = '<b>UNote</b>';
     $('#rbody').innerHTML = '<div class="panehint">Open a note to see what links to it.</div>';
     $('#sWords').textContent = '0 words';
@@ -104,6 +105,7 @@ function renderDoc() {
   if (document.activeElement !== $('#title')) $('#title').value = n.title || '';
   if (document.activeElement !== $('#ed')) $('#ed').value = n.body || '';
   $('#pv').innerHTML = md(n.body || '');
+  hydrateMedia($('#pv'));
 
   const tags = tagOf(n.body);
   $('#crumbs').innerHTML = (n.vault ? 'Vault' : 'Notes') +

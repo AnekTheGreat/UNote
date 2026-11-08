@@ -199,6 +199,7 @@ function lockVault(quiet) {
   if (S.view === 'vault') { S.view = 'notes'; S.folder = ''; S.tag = ''; }
   const gw = $('#graphwrap');
   if (gw && !gw.hidden) closeGraph();
+  mediaRevokeAll();
   renderSide();
   if (!quiet) toast('Vault closed. Everything inside is locked away.');
 }
@@ -484,6 +485,7 @@ async function wipeAll() {
     for (const n of S.notes) await dbDel('notes', n.id);
     for (const r of S.vault.notes) await dbDel('notes', r.id);
     await kvSet('vault', null);
+    for (const m of await dbAll('media')) await dbDel('media', m.id);
     await kvSet('settings', { onboarded: false });
     location.reload();
   });
@@ -497,6 +499,7 @@ async function buildBundle() {
     app: APP, kind: 'backup', version: VERSION, at: new Date().toISOString(),
     settings: { theme: S.settings.theme, accent: S.settings.accent, size: S.settings.size, mode: S.settings.mode, autolock: S.settings.autolock, sort: S.settings.sort },
     notes: recs.filter(r => !r.vault),
+    media: await bundleMedia(),
     vault: meta && meta.on ? { on: true, salt: meta.salt, iter: meta.iter, verifier: meta.verifier, notes: recs.filter(r => r.vault) } : { on: false },
   };
 }
@@ -544,6 +547,21 @@ async function unpack(code) {
 }
 
 async function transferDialog() {
+  const mediaCount = (await dbAll('media')).length;
+  if (mediaCount) {
+    const d = dialog({
+      title: 'Transfer with photos and recordings',
+      body: '<div class="hint" style="margin-top:0">This notebook has ' + mediaCount +
+        ' ' + (mediaCount === 1 ? 'attachment' : 'attachments') +
+        ' in it. A pasteable code cannot carry those, so use the file.</div>' +
+        '<div class="hint">Save the file, then on the other phone: Settings - Your data - ' +
+        'Import a backup - Choose a file. A Vault that comes across stays sealed with the PIN it had.</div>',
+      foot: '<div class="grow"></div><button class="btn" data-close="1">Not now</button>' +
+        '<button class="btn primary" id="trfSave">Save the file</button>',
+    });
+    $('#trfSave', d).addEventListener('click', () => { closeDialog(); exportAll(); });
+    return;
+  }
   const bundle = await buildBundle();
   const code = 'UNOTE1:' + await pack(JSON.stringify(bundle));
   const sizeKb = Math.round(code.length / 1024);
@@ -638,6 +656,7 @@ async function runImport(text, mode) {
       toast('Vault skipped: the backup was sealed with a different PIN.', 4600);
     }
   }
+  if (bundle.media && bundle.media.length) await pullInMedia(bundle.media);
   if (bundle.settings) {
     Object.assign(S.settings, bundle.settings);
     kvSet('settings', S.settings);
@@ -647,7 +666,9 @@ async function runImport(text, mode) {
   if (S.vault.key) await decryptVault();
   closeDialog();
   renderSide(); renderDoc();
-  toast('Imported: ' + added + ' new, ' + updated + ' updated.', 3600);
+  let tail = '';
+  if (bundle.vault && bundle.vault.on) tail = ' The Vault came across sealed: it opens with the PIN it was sealed with, or you can reset it and start empty.';
+  toast('Imported: ' + added + ' new, ' + updated + ' updated.' + tail, 5200);
 }
 
 /* ---------------- updates (over the air) ---------------- */
@@ -826,7 +847,7 @@ async function boot() {
   document.documentElement.dataset.theme = S.settings.theme || 'dark';
   setAccent(S.settings.accent || '#7c5cff');
   document.documentElement.style.setProperty('--size', (S.settings.size || 16) + 'px');
-  setMode(S.settings.mode || 'split');
+  setMode(saved && saved.mode ? saved.mode : (window.innerWidth < 860 ? 'read' : 'split'));
   $('#sVer').textContent = 'UNote ' + VERSION;
 
   const recs = await dbAll('notes');
@@ -911,7 +932,10 @@ async function boot() {
   ed.addEventListener('input', () => {
     if (!S.current) return;
     S.current.body = ed.value;
-    if (document.body.dataset.mode !== 'edit') $('#pv').innerHTML = md(ed.value);
+    if (document.body.dataset.mode !== 'edit') {
+      $('#pv').innerHTML = md(ed.value);
+      hydrateMedia($('#pv'));
+    }
     queueSave();
     $('#sWords').textContent = words(ed.value) + ' words';
     refreshDocMeta();
@@ -966,6 +990,7 @@ async function boot() {
     toast(S.current.fav ? 'Pinned to favourites.' : 'Removed from favourites.');
   });
   $('#btnMore').addEventListener('click', noteMenu);
+  setupAttachments();
   $('#updChip').addEventListener('click', () => checkUpdate(true).then(() => { const c = $('#updChip'); if (!c.hidden) c.onclick(); }));
 
   // dialogs close on backdrop / Esc
@@ -1114,6 +1139,252 @@ function editorKey(e, el) {
     }
   }
   setTimeout(() => suggestUpdate(el), 0);
+}
+
+
+/* ---------------- attachments: photos, video, audio, voice memos ---------------- */
+const MEDIA = { urls: {} };
+
+function mediaKind(mime, name) {
+  const m = String(mime || '');
+  if (m.indexOf('image/') === 0) return 'image';
+  if (m.indexOf('video/') === 0) return 'video';
+  if (m.indexOf('audio/') === 0) return 'audio';
+  const ext = String(name || '').toLowerCase().split('.').pop();
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif', 'avif'].indexOf(ext) >= 0) return 'image';
+  if (['mp4', 'mov', 'webm', 'm4v', '3gp'].indexOf(ext) >= 0) return 'video';
+  if (['mp3', 'm4a', 'wav', 'ogg', 'oga', 'aac', 'opus', 'amr', 'weba'].indexOf(ext) >= 0) return 'audio';
+  return 'file';
+}
+
+async function mediaEncrypt(key, bytes) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, bytes);
+  return { iv: toB64(iv), ct: toB64(ct) };
+}
+async function mediaDecrypt(key, ivB64, ctB64) {
+  return crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(ivB64) }, key, fromB64(ctB64));
+}
+
+async function saveAttachment(file, note) {
+  const bytes = await file.arrayBuffer();
+  const rec = {
+    id: 'm' + uid(), noteId: note.id, kind: mediaKind(file.type, file.name),
+    mime: file.type || '', name: file.name || 'Attachment', size: bytes.byteLength, at: nowMs(),
+  };
+  if (note.vault) {
+    if (!S.vault.key) throw new Error('the Vault is closed');
+    const box = await mediaEncrypt(S.vault.key, bytes);
+    rec.enc = true; rec.iv = box.iv; rec.ct = box.ct;
+  } else {
+    rec.blob = new Blob([bytes], { type: rec.mime || 'application/octet-stream' });
+  }
+  await dbPut('media', rec);
+  return rec;
+}
+
+async function mediaObjectUrl(id) {
+  if (MEDIA.urls[id]) return MEDIA.urls[id];
+  const rec = await req(store('media').get(id));
+  if (!rec) return null;
+  let blob = rec.blob;
+  if (!blob) {
+    if (!S.vault.key) return null;
+    try {
+      blob = new Blob([await mediaDecrypt(S.vault.key, rec.iv, rec.ct)],
+        { type: rec.mime || 'application/octet-stream' });
+    } catch (e) { return null; }
+  }
+  const url = URL.createObjectURL(blob);
+  MEDIA.urls[id] = url;
+  return url;
+}
+
+function mediaRevokeAll() {
+  Object.keys(MEDIA.urls).forEach(k => { try { URL.revokeObjectURL(MEDIA.urls[k]); } catch (e) {} });
+  MEDIA.urls = {};
+}
+
+async function hydrateMedia(root) {
+  if (!root) return;
+  const imgs = $$('img[src^="unote-media:"]', root);
+  for (const el of imgs) {
+    const id = el.getAttribute('src').slice('unote-media:'.length);
+    const url = await mediaObjectUrl(id);
+    if (url) el.src = url; else el.remove();
+  }
+  const links = $$('a[href^="unote-media:"]', root);
+  for (const a of links) {
+    const id = a.getAttribute('href').slice('unote-media:'.length);
+    const rec = await req(store('media').get(id));
+    if (!rec) { a.removeAttribute('href'); a.classList.add('missing'); continue; }
+    const url = await mediaObjectUrl(id);
+    if (!url) {
+      const box = document.createElement('div');
+      box.className = 'media';
+      box.innerHTML = '<div class="cap">In the Vault - open it to play this.</div>';
+      a.replaceWith(box);
+      continue;
+    }
+    if (rec.kind === 'audio' || rec.kind === 'video') {
+      const box = document.createElement('div');
+      box.className = 'media';
+      const player = document.createElement(rec.kind);
+      player.controls = true; player.preload = 'metadata'; player.src = url;
+      const cap = document.createElement('div');
+      cap.className = 'cap';
+      cap.textContent = (rec.name || (rec.kind === 'audio' ? 'Recording' : 'Video')) +
+        (rec.size ? ' · ' + Math.max(1, Math.round(rec.size / 1024)) + ' KB' : '');
+      box.appendChild(player); box.appendChild(cap);
+      a.replaceWith(box);
+    } else {
+      a.href = url; a.download = rec.name || 'file';
+      a.textContent = (rec.name || 'Attachment') + ' · ' +
+        (rec.size > 1048576 ? (rec.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round((rec.size || 0) / 1024)) + ' KB');
+    }
+  }
+}
+
+async function addFiles(files) {
+  const list = Array.from(files || []);
+  if (!list.length) return;
+  const note = S.current;
+  if (!note) { toast('Open a note first, then add to it.'); return; }
+  if (note.vault && !S.vault.key) { unlockDialog(() => addFiles(list)); return; }
+  let done = 0;
+  for (const f of list) {
+    try {
+      const rec = await saveAttachment(f, note);
+      const token = rec.kind === 'image'
+        ? '![](unote-media:' + rec.id + ')'
+        : '[' + String(rec.name || 'Attachment').replace(/[\[\]]/g, '') + '](unote-media:' + rec.id + ')';
+      const body = String(note.body || '').replace(/\s+$/, '');
+      note.body = (body ? body + '\n\n' : '') + token + '\n';
+      done++;
+    } catch (e) {
+      toast('Could not add ' + (f.name || 'that file') + (e && e.message ? ': ' + e.message : '.'));
+    }
+  }
+  if (!done) return;
+  await saveNote(note);
+  if ($('#ed')) $('#ed').value = note.body;
+  if ($('#pv')) { $('#pv').innerHTML = md(note.body); hydrateMedia($('#pv')); }
+  toast(done === 1 ? 'Added to the note.' : 'Added ' + done + ' to the note.');
+}
+
+function mediaPaste(e) {
+  const dt = e.clipboardData;
+  if (!dt) return;
+  const files = [];
+  Array.from(dt.items || []).forEach(it => {
+    if (it.kind === 'file') { const f = it.getAsFile(); if (f) files.push(f); }
+  });
+  if (!files.length) return;
+  e.preventDefault();
+  addFiles(files);
+}
+
+function attachDialog() {
+  if (!S.current) { toast('Open a note first, then add to it.'); return; }
+  const d = dialog({
+    title: 'Add to this note',
+    body: '<div class="hint" style="margin-top:0">A photo, a video, an audio file or a voice memo. It stays on this phone, inside the note.' +
+        (S.current.vault ? ' This note is in the Vault, so anything added is sealed with your PIN.' : '') + '</div>' +
+      '<button class="listrow" data-att="media"><span class="grow"><span class="lr-t">Photo or video</span><span class="lr-s">Pick one from this phone.</span></span><span class="chev">\u203a</span></button>' +
+      '<button class="listrow" data-att="audio"><span class="grow"><span class="lr-t">Audio file</span><span class="lr-s">A recording you already have.</span></span><span class="chev">\u203a</span></button>' +
+      '<button class="listrow" data-att="voice"><span class="grow"><span class="lr-t">Voice memo</span><span class="lr-s">Record it here and it goes into the note.</span></span><span class="chev">\u203a</span></button>' +
+      '<div class="hint" style="margin:10px 0 0">Pasting a photo or a file straight into a note works too.</div>' +
+      '<input type="file" id="attPhoto" accept="image/*,video/*" hidden multiple>' +
+      '<input type="file" id="attAudio" accept="audio/*" hidden multiple>',
+  });
+  d.addEventListener('click', e => {
+    const b = e.target.closest('[data-att]'); if (!b) return;
+    if (b.dataset.att === 'media') { $('#attPhoto', d).click(); return; }
+    if (b.dataset.att === 'audio') { $('#attAudio', d).click(); return; }
+    recordVoiceMemo();
+  });
+  $$('#attPhoto,#attAudio', d).forEach(inp => inp.addEventListener('change', e => {
+    const files = e.target.files;
+    closeDialog();
+    addFiles(files);
+  }));
+}
+
+async function recordVoiceMemo() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+    toast('This phone will not record from inside the app. Use Audio file instead.'); return;
+  }
+  let stream = null, rec = null;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { toast('No access to the microphone. Use Audio file instead.'); return; }
+  const chunks = [];
+  try { rec = new MediaRecorder(stream); }
+  catch (e) { stream.getTracks().forEach(t => t.stop()); toast('This phone will not record from inside the app.'); return; }
+  rec.ondataavailable = ev => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+  rec.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    const type = rec.mimeType || 'audio/webm';
+    const stamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    await addFiles([new File(chunks, 'Voice memo ' + stamp + '.webm', { type: type })]);
+  };
+  rec.start();
+  const d = dialog({
+    title: 'Voice memo',
+    body: '<div class="vaulthero"><div class="lk"><div class="rec-dot"></div></div>' +
+      '<h3>Recording</h3><p>Speak, then stop. It goes into this note.</p></div>',
+    foot: '<div class="grow"></div><button class="btn primary" id="recStop">Stop and keep it</button>',
+  });
+  $('#recStop', d).addEventListener('click', () => {
+    closeDialog();
+    try { rec.stop(); } catch (e) {}
+    toast('Keeping the recording…');
+  });
+  dlgOnClose = () => { try { if (rec && rec.state !== 'inactive') rec.stop(); } catch (e) {} };
+}
+
+function setupAttachments() {
+  const top = $('#top');
+  if (top && !$('#btnAttach')) {
+    const b = document.createElement('button');
+    b.className = 'iconbtn';
+    b.id = 'btnAttach';
+    b.title = 'Add a photo, video or voice memo';
+    b.setAttribute('aria-label', 'Add to this note');
+    b.innerHTML = '<svg viewBox="0 0 24 24"><path d="M15.5 7.5l-6.4 6.4a2.5 2.5 0 0 0 3.5 3.5l6.4-6.4a4.5 4.5 0 0 0-6.4-6.4L6 11a6.5 6.5 0 0 0 9.2 9.2"/></svg>';
+    b.addEventListener('click', attachDialog);
+    const fav = $('#btnFav');
+    if (fav) top.insertBefore(b, fav); else top.appendChild(b);
+  }
+  const ed = $('#ed'), title = $('#title');
+  if (ed && !ed.dataset.att) { ed.dataset.att = '1'; ed.addEventListener('paste', mediaPaste); }
+  if (title && !title.dataset.att) { title.dataset.att = '1'; title.addEventListener('paste', mediaPaste); }
+  window.addEventListener('pagehide', mediaRevokeAll);
+}
+
+async function bundleMedia() {
+  const out = [];
+  for (const m of await dbAll('media')) {
+    const base = { id: m.id, noteId: m.noteId, kind: m.kind, mime: m.mime, name: m.name, size: m.size, at: m.at };
+    if (m.enc) { base.enc = true; base.iv = m.iv; base.ct = m.ct; out.push(base); }
+    else if (m.blob) { base.data = toB64(await m.blob.arrayBuffer()); out.push(base); }
+  }
+  return out;
+}
+
+async function pullInMedia(list) {
+  let added = 0;
+  for (const m of (list || [])) {
+    if (!m || !m.id) continue;
+    const have = await req(store('media').get(m.id));
+    if (have) continue;
+    const rec = { id: m.id, noteId: m.noteId, kind: m.kind || 'file', mime: m.mime || '', name: m.name || 'Attachment', size: m.size || 0, at: m.at || nowMs() };
+    if (m.enc) { rec.enc = true; rec.iv = m.iv; rec.ct = m.ct; }
+    else if (m.data) rec.blob = new Blob([fromB64(m.data)], { type: rec.mime || 'application/octet-stream' });
+    else continue;
+    await dbPut('media', rec);
+    added++;
+  }
+  return added;
 }
 
 /* start */

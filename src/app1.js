@@ -2,7 +2,7 @@
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.8';
+const VERSION = '1.0.9';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -31,7 +31,7 @@ const dayKey = d => { const x = d || new Date(); return x.getFullYear() + '-' + 
 const words = s => (String(s || '').trim().match(/[^\s]+/g) || []).length;
 
 /* ---------------- storage ---------------- */
-const DB_NAME = 'unote', DB_VER = 1;
+const DB_NAME = 'unote', DB_VER = 2;
 let db = null;
 function openDB() {
   return new Promise((res, rej) => {
@@ -43,6 +43,10 @@ function openDB() {
         s.createIndex('updated', 'updated');
       }
       if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv', { keyPath: 'k' });
+      if (!d.objectStoreNames.contains('media')) {
+        const ms = d.createObjectStore('media', { keyPath: 'id' });
+        ms.createIndex('note', 'noteId');
+      }
     };
     r.onsuccess = () => { db = r.result; res(db); };
     r.onerror = () => rej(r.error);
@@ -127,7 +131,7 @@ function inlineMd(src, noteById) {
   const codes = [];
   s = s.replace(/`([^`]+)`/g, (m, c) => { codes.push(c); return '\u0001' + (codes.length - 1) + '\u0001'; });
   s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt, url) => '<img alt="' + alt + '" src="' + url + '">');
-  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (m, t, url) => '<a href="' + url + '" target="_blank" rel="noopener">' + t + '</a>');
+  s = s.replace(/\[([^\]]+)\]\(((?:https?|unote-media):[^)\s]+)\)/g, (m, t, url) => '<a href="' + url + '" target="_blank" rel="noopener">' + t + '</a>');
   s = s.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, target, label) => {
     const t = target.trim();
     const hit = look(t);

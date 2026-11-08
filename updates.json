@@ -1,13 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "date": "2026-11-08",
   "notes": [
-    "The Vault is a room now, not a filter. Its notes are only in front of you while you are inside it.",
-    "Close the Vault and it locks: no Vault title, tag, link or count shows anywhere else - not in search, the graph, or the note list.",
-    "Reset the Vault: from Settings or from the PIN screen. It says what a reset does, offers to save the notes as a text file first, and lets you set a new PIN straight away."
+    "Photos, video, audio and voice memos go into a note now. Paste one in, pick one from the phone, or record a memo and it lands in the page with a player.",
+    "Anything added to a note in the Vault is sealed with the Vault's key, like the words. Close the Vault and it goes from the page too.",
+    "A transfer carries them: the file export includes every attachment. A Vault that arrives from another phone opens only with the PIN it was sealed with - the old one - or you reset it and start empty.",
+    "A calmer surface: one soft wash instead of three, more room around the writing, plainer note details, and a phone opens into the page instead of three cramped panes."
   ],
   "history": [
+    {
+      "version": "1.0.9",
+      "date": "2026-11-08",
+      "title": "Photos, voice memos, and a calmer page",
+      "notes": [
+        "Photos, video, audio and voice memos go into a note now. Paste one in, pick one from the phone, or record a memo and it lands in the page with a player.",
+        "Anything added to a note in the Vault is sealed with the Vault's key, like the words. Close the Vault and it goes from the page too.",
+        "A transfer carries them: the file export includes every attachment. A Vault that arrives from another phone opens only with the PIN it was sealed with - the old one - or you reset it and start empty.",
+        "A calmer surface: one soft wash instead of three, more room around the writing, plainer note details, and a phone opens into the page instead of three cramped panes."
+      ]
+    },
     {
       "version": "1.0.8",
       "date": "2026-11-08",

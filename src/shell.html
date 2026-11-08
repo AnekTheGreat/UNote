@@ -384,6 +384,47 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   .appcard .go{flex:none;text-decoration:none;border:1px solid var(--glass-line);border-radius:12px;padding:8px 13px;
     font-size:12.5px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.07);box-shadow:inset 0 1px 0 var(--glass-hi)}
   .appcard .go:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ---- 1.0.9: a calmer surface ---- */
+  body::before{opacity:.45}
+  #app{
+    background:
+      radial-gradient(70% 52% at 8% -10%,rgba(139,108,255,.17),transparent 62%),
+      radial-gradient(60% 46% at 100% 0%,rgba(62,224,166,.07),transparent 60%),
+      var(--bg);
+  }
+  #rail{background:rgba(255,255,255,.03)}
+  #side,#right{background:color-mix(in srgb,var(--glass) 88%,transparent)}
+  #top{background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(10px)}
+  #doc{padding:22px 30px 0}
+  #title{font-size:27px;letter-spacing:-.4px}
+  .docmeta{gap:9px;margin:10px 0 18px;font-size:11px;color:var(--dim2)}
+  .docmeta .pill{border:0;background:var(--panel2);border-radius:8px;padding:2px 8px}
+  .docmeta .pill.acc{background:var(--accent-soft);border:0}
+  #ed{line-height:1.86}
+  .md{line-height:1.8}
+  .md h1{font-size:1.55em;border-bottom:0;padding-bottom:0;margin-top:1.1em}
+  .md h2{font-size:1.28em;margin-top:1.2em}
+  .md p{margin:.85em 0}
+  .md a{border-bottom-color:transparent}
+  .md blockquote{background:none;border-left-width:2px;color:var(--dim)}
+  .md img{display:block;max-width:100%;border-radius:14px;margin:14px 0}
+  .md .media{display:block;border:1px solid var(--line);border-radius:16px;padding:10px;background:var(--panel2);margin:14px 0}
+  .md .media video{width:100%;display:block;border-radius:10px}
+  .md .media audio{width:100%;display:block}
+  .md .media .cap{font-size:11.5px;color:var(--dim2);margin-top:8px;line-height:1.4}
+  .md a[href^="blob:"]{display:inline-block;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--panel2);color:var(--ink);margin:10px 0;text-decoration:none}
+  .md .locked-media{display:none}
+  .rec-dot{width:12px;height:12px;border-radius:50%;background:var(--err);margin:0 auto 10px;animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  #status #btnWhats,#status [data-apps]{display:none}
+  @media (max-width:860px){
+    #doc{padding:16px 18px 0}
+    #title{font-size:22px}
+    #modes button[data-mode="split"]{display:none}
+    .docmeta{margin:8px 0 14px}
+    .md img{border-radius:12px}
+  }
 </style>
 </head>
 <body data-mode="split">
