@@ -1,0 +1,36 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: index.html is what src/ builds
+        run: python3 dev/build.py --check
+
+      - name: the three versions agree
+        run: |
+          python3 - <<'PY'
+          import json, re
+          page = open('index.html', encoding='utf-8').read()
+          sw = open('sw.js', encoding='utf-8').read()
+          upd = json.load(open('updates.json', encoding='utf-8'))
+          v = re.search(r"const VERSION = '([0-9.]+)'", page).group(1)
+          c = re.search(r'unote-v([0-9.]+)', sw).group(1)
+          print('page', v, '| cache', c, '| updates.json', upd['version'])
+          assert v == c == upd['version'], 'the three versions have to agree'
+          PY
+
+      - name: the page stays self-contained
+        run: |
+          if grep -qE 'https?://' index.html; then echo 'the page must not call out'; exit 1; fi
+          echo 'no external requests'

@@ -1,0 +1,81 @@
+name: Sync the published build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * *'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: true
+
+env:
+  LIVE: https://site-e28e804444934263a1f0838974d59f45.freebuff.page
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull the published build and its sources
+        run: |
+          set -euo pipefail
+          mkdir -p src dev
+          for f in index.html sw.js updates.json manifest.webmanifest \
+                   icon.svg icon-maskable.svg \
+                   src/shell.html src/app1.js src/app2.js src/app3.js dev/build.py; do
+            curl -fsSL "$LIVE/$f" -o "$f"
+          done
+          wc -c index.html sw.js src/app3.js
+
+      - name: The page is the one src/ builds
+        run: python3 dev/build.py --check
+
+      - name: The page stays self-contained
+        run: |
+          if grep -qE 'https?://' index.html; then echo 'the page must not call out'; exit 1; fi
+          echo 'no external requests'
+
+      - name: Commit what changed
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo 'already in step with the release'
+            exit 0
+          fi
+          V=$(python3 -c "import json;print(json.load(open('updates.json'))['version'])")
+          git config user.name 'UNote sync'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m "Sync the published build ($V)"
+          git push
+
+  publish:
+    needs: sync
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Stage the app
+        run: |
+          mkdir -p _site
+          cp index.html sw.js updates.json manifest.webmanifest \
+             icon.svg icon-maskable.svg _site/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
