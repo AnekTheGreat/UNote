@@ -4,31 +4,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- a note card with a folded corner, and two link dots; all inside the 66dp safe zone -->
-    <path
-        android:fillColor="#7C5CFF"
-        android:pathData="M40,32h22l14,14v30a4,4 0 0 1 -4,4h-32a4,4 0 0 1 -4,-4v-40a4,4 0 0 1 4,-4z" />
-    <path
-        android:fillColor="#B9A6FF"
-        android:pathData="M62,32l14,14h-14z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M45,52h24a2,2 0 0 1 0,4h-24a2,2 0 0 1 0,-4z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.85"
-        android:pathData="M45,61h24a2,2 0 0 1 0,4h-24a2,2 0 0 1 0,-4z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.65"
-        android:pathData="M45,70h14a2,2 0 0 1 0,4h-14a2,2 0 0 1 0,-4z" />
-    <path
-        android:fillColor="#080613"
-        android:pathData="M82,70a11,11 0 1 1 0,22a11,11 0 1 1 0,-22z" />
-    <path
-        android:fillColor="#7C5CFF"
-        android:pathData="M78.6,81a4,4 0 1 1 0,-8a4,4 0 0 1 0,8z" />
-    <path
-        android:fillColor="#7C5CFF"
-        android:pathData="M85.4,81a4,4 0 1 1 0,-8a4,4 0 0 1 0,8z" />
+    <path android:fillColor="#7C5CFF" android:pathData="M41,24h25l14,14v41a5,5 0 0 1 -5,5h-34a5,5 0 0 1 -5,-5v-50a5,5 0 0 1 5,-5z" />
+    <path android:fillColor="#C9BCFF" android:pathData="M66,24l14,14h-14z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M46,44h20a2,2 0 0 1 0,4h-20a2,2 0 0 1 0,-4z" />
+    <path android:fillColor="#FFFFFF" android:fillAlpha="0.92" android:pathData="M46,55h20a2,2 0 0 1 0,4h-20a2,2 0 0 1 0,-4z" />
+    <path android:fillColor="#FFFFFF" android:fillAlpha="0.72" android:pathData="M46,66h12a2,2 0 0 1 0,4h-12a2,2 0 0 1 0,-4z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M63,74a4,4 0 1 1 8,0a4,4 0 1 1 -8,0z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M70.5,74a4,4 0 1 1 8,0a4,4 0 1 1 -8,0z" />
+    <path android:fillColor="#1B1633" android:fillAlpha="0.6" android:pathData="M70.2,69.4h0.9v9.2h-0.9z" />
 </vector>

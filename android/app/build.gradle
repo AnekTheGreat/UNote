@@ -4,7 +4,7 @@ plugins {
     id 'com.android.application'
 }
 
-def appVersion = '1.0.3'
+def appVersion = '1.0.4'
 
 // android/keystore.properties exists only in CI, written from repository secrets.
 def ks = new Properties()
@@ -21,7 +21,7 @@ android {
         applicationId 'app.unote'
         minSdk 23
         targetSdk 34
-        versionCode 1003
+        versionCode 1004
         versionName appVersion
     }
 

@@ -1,13 +1,23 @@
 {
   "app": "UNote",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "date": "November 8, 2026",
   "notes": [
-    "Patch notes: a What's new button sits in the footer, and Settings has a row for it. Every version is listed, newest first.",
-    "After an over-the-air update the sheet opens once by itself, so a new version says what changed instead of just being newer.",
-    "A new launcher icon: a note card with a folded corner on a violet field, with an adaptive, a round and a themed version for Android."
+    "The icon is redrawn: the note card now fills the icon instead of sitting inside a black circle at the bottom right.",
+    "The two link dots rest on the card and part along a hairline, so the only dark line left is a hair thin one.",
+    "Adaptive, round, themed and home-screen icons are redrawn together, so the APK and the installed page match."
   ],
   "history": [
+    {
+      "version": "1.0.4",
+      "date": "November 8, 2026",
+      "title": "A fuller mark, and no black disc",
+      "notes": [
+        "The icon is redrawn: the note card now fills the icon instead of sitting inside a black circle at the bottom right.",
+        "The two link dots rest on the card and part along a hairline, so the only dark line left is a hair thin one.",
+        "Adaptive, round, themed and home-screen icons are redrawn together, so the APK and the installed page match."
+      ]
+    },
     {
       "version": "1.0.3",
       "date": "November 8, 2026",
