@@ -1,14 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "date": "2026-11-08",
   "notes": [
-    "Photos, video, audio and voice memos go into a note now. Paste one in, pick one from the phone, or record a memo and it lands in the page with a player.",
-    "Anything added to a note in the Vault is sealed with the Vault's key, like the words. Close the Vault and it goes from the page too.",
-    "A transfer carries them: the file export includes every attachment. A Vault that arrives from another phone opens only with the PIN it was sealed with - the old one - or you reset it and start empty.",
-    "A calmer surface: one soft wash instead of three, more room around the writing, plainer note details, and a phone opens into the page instead of three cramped panes."
+    "Setting a Vault PIN uses the number pad now, the same one that unlocks it. No keyboard opens, so nothing offers to save or fill a password over the PIN.",
+    "Backups work inside the app: saving one asks the phone where to keep it, and choosing one to import opens the phone file picker - which never opened before.",
+    "A file the phone labels unknown is no longer hidden from the picker.",
+    "The graph is titled what it shows, says how many notes and links it drew, and when there are none it says how to make one: write [[another note's title]]."
   ],
   "history": [
+    {
+      "version": "1.0.10",
+      "date": "2026-11-08",
+      "title": "A PIN with no keyboard, and backups that land",
+      "notes": [
+        "Setting a Vault PIN uses the number pad now, the same one that unlocks it. No keyboard opens, so nothing offers to save or fill a password over the PIN.",
+        "Backups work inside the app: saving one asks the phone where to keep it, and choosing one to import opens the phone file picker - which never opened before.",
+        "A file the phone labels unknown is no longer hidden from the picker.",
+        "The graph is titled what it shows, says how many notes and links it drew, and when there are none it says how to make one: write [[another note's title]]."
+      ]
+    },
     {
       "version": "1.0.9",
       "date": "2026-11-08",

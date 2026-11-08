@@ -234,7 +234,13 @@ function openGraph() {
     const hit = byTitle[t.toLowerCase()];
     if (hit && hit.id !== n.id) G.edges.push([idx[n.id], idx[hit.id]]);
   }));
-  $('#graphlegend').textContent = G.nodes.length + ' notes · ' + G.edges.length + ' links';
+  const legend = $('#graphlegend');
+  legend.textContent = G.nodes.length + ' note' + (G.nodes.length === 1 ? '' : 's') + ' · ' +
+    (G.edges.length
+      ? G.edges.length + ' link' + (G.edges.length === 1 ? '' : 's') + ' · tap a dot to open it'
+      : 'no links yet');
+  const empty = $('#graphempty');
+  if (empty) empty.hidden = G.edges.length > 0;
   G.scale = 1; G.tx = 0; G.ty = 0;
   sizeGraph();
   if (!G.raf) { G.last = performance.now(); G.raf = requestAnimationFrame(graphTick); }

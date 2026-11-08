@@ -269,6 +269,8 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 #graphbar .grow{flex:1}
 #graph{flex:1;display:block;width:100%;height:100%;cursor:grab;touch-action:none}
 #graph.drag{cursor:grabbing}
+#graphempty{position:absolute;left:24px;right:24px;bottom:72px;text-align:center;color:var(--dim);font-size:13px;line-height:1.55;pointer-events:none}
+#graphempty strong{display:block;color:var(--ink);font-size:14px;font-weight:600;margin-bottom:5px}
 .glegend{font-size:11px;color:var(--dim2)}
 
 .setsec{border:1px solid var(--line);border-radius:13px;padding:13px 14px;margin-bottom:10px;background:var(--panel2)}
@@ -536,12 +538,13 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 <div id="dlg" hidden><div id="dlgBody"></div></div>
 <div id="graphwrap" hidden>
   <div id="graphbar">
-    <strong style="font-size:13px">Graph</strong>
+    <strong style="font-size:13px">How your notes connect</strong>
     <span class="glegend" id="graphlegend"></span>
     <div class="grow"></div>
     <button class="btn" id="graphClose">Close</button>
   </div>
   <canvas id="graph"></canvas>
+  <div id="graphempty" hidden><strong>No links yet</strong>When one note mentions another with [[its title]], a line joins the two here. Tap any dot to open that note.</div>
 </div>
 <div id="toast"></div>
 <script>

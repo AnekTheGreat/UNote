@@ -269,6 +269,8 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 #graphbar .grow{flex:1}
 #graph{flex:1;display:block;width:100%;height:100%;cursor:grab;touch-action:none}
 #graph.drag{cursor:grabbing}
+#graphempty{position:absolute;left:24px;right:24px;bottom:72px;text-align:center;color:var(--dim);font-size:13px;line-height:1.55;pointer-events:none}
+#graphempty strong{display:block;color:var(--ink);font-size:14px;font-weight:600;margin-bottom:5px}
 .glegend{font-size:11px;color:var(--dim2)}
 
 .setsec{border:1px solid var(--line);border-radius:13px;padding:13px 14px;margin-bottom:10px;background:var(--panel2)}
@@ -536,12 +538,13 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 <div id="dlg" hidden><div id="dlgBody"></div></div>
 <div id="graphwrap" hidden>
   <div id="graphbar">
-    <strong style="font-size:13px">Graph</strong>
+    <strong style="font-size:13px">How your notes connect</strong>
     <span class="glegend" id="graphlegend"></span>
     <div class="grow"></div>
     <button class="btn" id="graphClose">Close</button>
   </div>
   <canvas id="graph"></canvas>
+  <div id="graphempty" hidden><strong>No links yet</strong>When one note mentions another with [[its title]], a line joins the two here. Tap any dot to open that note.</div>
 </div>
 <div id="toast"></div>
 <script>
@@ -549,7 +552,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.9';
+const VERSION = '1.0.10';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1049,7 +1052,13 @@ function openGraph() {
     const hit = byTitle[t.toLowerCase()];
     if (hit && hit.id !== n.id) G.edges.push([idx[n.id], idx[hit.id]]);
   }));
-  $('#graphlegend').textContent = G.nodes.length + ' notes · ' + G.edges.length + ' links';
+  const legend = $('#graphlegend');
+  legend.textContent = G.nodes.length + ' note' + (G.nodes.length === 1 ? '' : 's') + ' · ' +
+    (G.edges.length
+      ? G.edges.length + ' link' + (G.edges.length === 1 ? '' : 's') + ' · tap a dot to open it'
+      : 'no links yet');
+  const empty = $('#graphempty');
+  if (empty) empty.hidden = G.edges.length > 0;
   G.scale = 1; G.tx = 0; G.ty = 0;
   sizeGraph();
   if (!G.raf) { G.last = performance.now(); G.raf = requestAnimationFrame(graphTick); }
@@ -1310,37 +1319,48 @@ async function onboard() {
   });
 }
 
-function askNewPin(done) {
-  const d = dialog({
-    body: '<div class="vaulthero"><div class="lk"><svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><circle cx="12" cy="15.5" r="1.3"/></svg></div>' +
-      '<h3>Create a Vault PIN</h3><p>4 to 8 digits. It is the only key to the Vault.</p></div>' +
-      '<label class="field"><span>PIN</span><input id="vp1" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="4 to 8 digits"></label>' +
-      '<label class="field"><span>Type it once more</span><input id="vp2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></label>' +
-      '<div class="pinmsg" id="vpMsg"></div>' +
-      '<div class="hint" style="text-align:center;margin:0">A PIN cannot be recovered. If you forget it, the Vault can only be emptied.</div>',
-    foot: '<div class="grow"></div><button class="btn" data-close="1">Not now</button><button class="btn primary" id="vpGo">Create the Vault</button>',
-  });
-  const msg = t => { const m = $('#vpMsg', d); m.textContent = t || ''; m.classList.toggle('bad', !!t); };
-  const go = async () => {
-    const p1 = ($('#vp1', d).value || '').trim();
-    const p2 = ($('#vp2', d).value || '').trim();
-    if (!/^[0-9]{4,8}$/.test(p1)) return msg('The PIN has to be 4 to 8 digits.');
-    if (p1 !== p2) return msg('Those two did not match.');
-    const btn = $('#vpGo', d);
-    btn.disabled = true; btn.textContent = 'Sealing...';
-    try {
-      await setupVaultPin(p1);
-      closeDialog();
-      done && done();
-    } catch (e) {
-      btn.disabled = false; btn.textContent = 'Create the Vault';
-      msg('Could not create it: ' + e.message);
-    }
+/* ---------------- PIN entry with no keyboard ---------------- */
+
+/* Two entries on the same number pad that unlocks the Vault. Nothing is typed into a text
+   field, so no keyboard opens and the phone's password manager has nothing to offer. */
+function askPinPair(o) {
+  const step = first => {
+    closeDialog();
+    pinDialog({
+      title: first ? 'Type the PIN once more' : o.title,
+      sub: first ? 'The same digits, to be sure.' : o.sub,
+      extra: first
+        ? '<div class="hint" style="text-align:center;margin:10px 0 0">A PIN cannot be recovered.</div>'
+        : '<div class="hint" style="text-align:center;margin:10px 0 0">Just the keypad - no keyboard, no password pop-up.</div>' +
+          '<div style="text-align:center;margin-top:10px"><button class="btn ghost" id="pinPairCancel" style="font-size:12px;color:var(--dim2)">Not now</button></div>',
+      onPin: (pin, ui) => {
+        if (!first) { step(pin); return; }
+        if (pin !== first) {
+          closeDialog();
+          toast('Those two did not match. Start again.', 3600);
+          setTimeout(() => step(null), 420);
+          return;
+        }
+        closeDialog();
+        o.onPin(first);
+      },
+    });
+    const c = document.getElementById('pinPairCancel');
+    if (c) c.addEventListener('click', () => closeDialog());
   };
-  $('#vpGo', d).addEventListener('click', go);
-  $('#vp1', d).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#vp2', d).focus(); } });
-  $('#vp2', d).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
-  setTimeout(() => { const f = $('#vp1', d); if (f) f.focus(); }, 60);
+  step(null);
+}
+
+function askNewPin(done) {
+  askPinPair({
+    title: 'Create a Vault PIN',
+    sub: '4 to 8 digits. It is the only key to the Vault.',
+    onPin: async pin => {
+      toast('Sealing the Vault...', 1800);
+      try { await setupVaultPin(pin); done && done(); }
+      catch (e) { toast('Could not create it: ' + e.message, 4200); }
+    },
+  });
 }
 
 async function unlockDialog(after) {
@@ -1639,45 +1659,30 @@ async function changePin() {
   const meta = await vaultMeta();
   if (!meta || !meta.on) { askNewPin(() => toast('Vault PIN set.')); return; }
   if (!S.vault.key) { unlockDialog(() => changePin()); return; }
-  const d = dialog({
+  askPinPair({
     title: 'Change the Vault PIN',
-    body: '<label class="field"><span>New PIN</span><input id="cp1" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="4 to 8 digits"></label>' +
-      '<label class="field"><span>New PIN again</span><input id="cp2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></label>' +
-      '<div class="pinmsg" id="cpMsg"></div>' +
-      '<div class="hint" style="margin:0">Every note in the Vault is resealed with the new PIN, and the old one stops working.</div>',
-    foot: '<div class="grow"></div><button class="btn" data-close="1">Cancel</button><button class="btn primary" id="cpGo">Change it</button>',
-  });
-  const msg = t => { const m = $('#cpMsg', d); m.textContent = t || ''; m.classList.toggle('bad', !!t); };
-  const go = async () => {
-    const p1 = ($('#cp1', d).value || '').trim();
-    const p2 = ($('#cp2', d).value || '').trim();
-    if (!/^[0-9]{4,8}$/.test(p1)) return msg('The PIN has to be 4 to 8 digits.');
-    if (p1 !== p2) return msg('Those two did not match.');
-    const btn = $('#cpGo', d);
-    btn.disabled = true; btn.textContent = 'Resealing...';
-    try {
-      const plain = S.vault.plain.slice();
-      const salt = randSalt();
-      const key = await deriveKey(p1, salt, KDF_ITER);
-      const verifier = await aesEnc(key, 'unote-vault-v1');
-      for (const n of plain) {
-        const box = await aesEnc(key, JSON.stringify({ title: n.title, body: n.body, folder: n.folder }));
-        await dbPut('notes', { id: n.id, vault: true, created: n.created, updated: n.updated, iv: box.iv, ct: box.ct });
+    sub: 'Pick a new 4 to 8 digit PIN. Everything in the Vault is resealed with it.',
+    onPin: async p1 => {
+      toast('Resealing the Vault...', 2000);
+      try {
+        const plain = S.vault.plain.slice();
+        const salt = randSalt();
+        const key = await deriveKey(p1, salt, KDF_ITER);
+        const verifier = await aesEnc(key, 'unote-vault-v1');
+        for (const n of plain) {
+          const box = await aesEnc(key, JSON.stringify({ title: n.title, body: n.body, folder: n.folder }));
+          await dbPut('notes', { id: n.id, vault: true, created: n.created, updated: n.updated, iv: box.iv, ct: box.ct });
+        }
+        S.vault.key = key; S.vault.salt = salt;
+        S.vault.verifier = { iv: verifier.iv, ct: verifier.ct };
+        await kvSet('vault', { on: true, salt: salt, iter: KDF_ITER, verifier: S.vault.verifier });
+        await decryptVault();
+        toast('PIN changed. ' + plain.length + ' vault note' + (plain.length === 1 ? '' : 's') + ' resealed.', 4000);
+      } catch (e) {
+        toast('Could not change it: ' + e.message, 4200);
       }
-      S.vault.key = key; S.vault.salt = salt;
-      S.vault.verifier = { iv: verifier.iv, ct: verifier.ct };
-      await kvSet('vault', { on: true, salt: salt, iter: KDF_ITER, verifier: S.vault.verifier });
-      await decryptVault();
-      closeDialog();
-      toast('PIN changed. ' + plain.length + ' vault note' + (plain.length === 1 ? '' : 's') + ' resealed.');
-    } catch (e) {
-      btn.disabled = false; btn.textContent = 'Change it';
-      msg('Could not change it: ' + e.message);
-    }
-  };
-  $('#cpGo', d).addEventListener('click', go);
-  $('#cp2', d).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
-  setTimeout(() => { const f = $('#cp1', d); if (f) f.focus(); }, 60);
+    },
+  });
 }
 
 async function wipeAll() {
@@ -1698,6 +1703,28 @@ async function wipeAll() {
     await kvSet('settings', { onboarded: false });
     location.reload();
   });
+}
+
+/* ---------------- the phone's own file picker ---------------- */
+
+/* The installed app hands the page a small bridge, window.UNoteFile. Without it (the browser
+   copy) everything falls back to a plain download and a file input, as before. */
+function nativeFiles() {
+  return (typeof window !== 'undefined' && window.UNoteFile &&
+    typeof window.UNoteFile.saveBackup === 'function') ? window.UNoteFile : null;
+}
+
+let pickBuf = '';
+let pickMode = 'merge';
+if (typeof window !== 'undefined') {
+  window.UNotePickChunk = s => { pickBuf += s; };
+  window.UNotePicked = ok => {
+    const text = ok ? pickBuf : '';
+    pickBuf = '';
+    if (!text) { toast('That file came through empty. Try another one.', 4200); return; }
+    runImport(text, pickMode);
+  };
+  window.UNoteSaved = ok => toast(ok ? 'Backup saved.' : 'Could not save the backup.', 3800);
 }
 
 /* ---------------- export / transfer / import ---------------- */
@@ -1726,16 +1753,23 @@ async function exportAll() {
   try {
     const bundle = await buildBundle();
     const name = 'unote-' + dayKey() + '.unote.json';
-    const blob = new Blob([JSON.stringify(bundle, null, 1)], { type: 'application/json' });
+    const json = JSON.stringify(bundle, null, 1);
+    const msg = bundle.notes.length + ' note' + (bundle.notes.length === 1 ? '' : 's') +
+      (bundle.vault.on ? ' + ' + bundle.vault.notes.length + ' sealed in the Vault' : '');
+    const nf = nativeFiles();
+    if (nf) {
+      nf.saveBackup(name, json);
+      toast('Exported ' + msg + '. Pick where to keep ' + name + '.', 4600);
+      return;
+    }
+    const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    const msg = bundle.notes.length + ' note' + (bundle.notes.length === 1 ? '' : 's') +
-      (bundle.vault.on ? ' + ' + bundle.vault.notes.length + ' sealed in the Vault' : '');
-    toast('Exported ' + msg + ' to ' + name, 4200);
-  } catch (e) { toast('Export failed: ' + e.message); }
+    toast('Exported ' + msg + ' to ' + name, 4600);
+  } catch (e) { toast('Export failed: ' + e.message, 4200); }
 }
 
 async function pack(str) {
@@ -1801,21 +1835,27 @@ async function importDialog() {
     cls: 'wide',
     title: 'Import a backup',
     body: '<div class="hint" style="margin-top:0">Pick the .unote.json file, or paste a transfer code.</div>' +
-      '<button class="listrow" id="impPick"><span class="grow"><span class="lr-t">Choose a file</span><span class="lr-s">A UNote backup from this or another device.</span></span><span class="chev">›</span></button>' +
-      '<label class="field" style="margin-top:12px"><span>Or paste a transfer code</span><textarea id="impCode" rows="5" style="font-family:var(--mono);font-size:11px" placeholder="UNOTE1:…"></textarea></label>' +
+      '<button class="listrow" id="impPick"><span class="grow"><span class="lr-t">Choose a file</span><span class="lr-s">A UNote backup from this or another device.</span></span><span class="chev">&#8250;</span></button>' +
+      '<label class="field" style="margin-top:12px"><span>Or paste a transfer code</span><textarea id="impCode" rows="5" style="font-family:var(--mono);font-size:11px" placeholder="UNOTE1:..."></textarea></label>' +
       '<div class="rowset"><span class="grow">How to bring it in</span><div class="seg" id="impMode">' +
       '<button data-m="merge" class="on">Merge</button><button data-m="replace">Replace everything</button></div></div>' +
       '<div class="hint">Merge keeps what is here and adds anything newer from the backup. Replace clears this device first.</div>' +
-      '<input type="file" id="impFile" accept=".json,.unote,application/json" hidden>',
+      '<input type="file" id="impFile" accept="*/*" hidden>',
     foot: '<div class="grow"></div><button class="btn primary" id="impGo">Import</button>',
   });
   let mode = 'merge';
-  const pick = () => $('#impFile', d).click();
+  const nf = nativeFiles();
+  const pick = () => {
+    if (nf) { pickMode = mode; pickBuf = ''; nf.pickBackup(); return; }
+    $('#impFile', d).click();
+  };
   $('#impPick', d).addEventListener('click', pick);
   $('#impFile', d).addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    const text = await f.text();
+    let text = '';
+    try { text = await f.text(); } catch (err) { toast('Could not read that file.', 4000); return; }
+    if (!text) { toast('That file came through empty. Try another one.', 4200); return; }
     await runImport(text, mode);
   });
   $('#impMode', d).addEventListener('click', e => {
