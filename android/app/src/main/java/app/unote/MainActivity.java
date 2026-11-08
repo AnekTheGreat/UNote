@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
     private String pendingText;
     private String pendingName;
     private File otaFile;
+    private String builtIn;    // version of the page inside this APK, read once
     private static final int REQ_FILES = 43;
     private static final int REQ_MIC = 44;
 
@@ -180,7 +181,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** The fetched page, if there is one that still looks like UNote. */
+    /** The fetched page, if there is one that still looks like UNote - and only if it is newer than
+     *  the page inside this APK. Installing a newer app used to leave an older fetched page in
+     *  charge, which made the new APK look like it had changed nothing at all. */
     private WebResourceResponse fetchedPage() {
         if (otaFile == null || !otaFile.isFile()) {
             return null;
@@ -190,6 +193,16 @@ public class MainActivity extends Activity {
             String head = new String(bytes, StandardCharsets.UTF_8);
             if (bytes.length < 20000 || !head.contains("const VERSION = '")) {
                 return null;                    // a half-written file must never take the app down
+            }
+            String fetched = pageVersion(head);
+            String bundled = builtInVersion();
+            boolean stale = fetched.isEmpty()
+                    || (!bundled.isEmpty() && compareVersions(fetched, bundled) < 0);
+            if (stale) {
+                // The app on this phone is newer than the page an earlier update left behind:
+                // the copy that came inside the APK wins, and the stale one is dropped.
+                otaFile.delete();
+                return null;
             }
             return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(bytes));
         } catch (Exception e) {
@@ -208,6 +221,19 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean hasPage() {
             return otaFile != null && otaFile.isFile();
+        }
+
+        @JavascriptInterface
+        public String pageSource() {
+            if (otaFile == null || !otaFile.isFile()) {
+                return "built-in " + builtInVersion();
+            }
+            try {
+                String v = pageVersion(new String(readFile(otaFile), StandardCharsets.UTF_8));
+                return "fetched " + (v.isEmpty() ? "unknown" : v);
+            } catch (Exception e) {
+                return "built-in " + builtInVersion();
+            }
         }
 
         @JavascriptInterface
@@ -375,6 +401,66 @@ public class MainActivity extends Activity {
                 tell("window.UNotePicked && window.UNotePicked(true)");
             }
         }).start();
+    }
+
+    /** The version of the page that came inside this APK, read once. */
+    private String builtInVersion() {
+        if (builtIn != null) {
+            return builtIn;
+        }
+        builtIn = "";
+        try (InputStream in = getAssets().open("www/index.html")) {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                bo.write(buf, 0, n);
+            }
+            builtIn = pageVersion(new String(bo.toByteArray(), StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            builtIn = "";
+        }
+        return builtIn;
+    }
+
+    /** "1.0.14" out of the page's own `const VERSION = '...'` line. */
+    private static String pageVersion(String html) {
+        if (html == null) {
+            return "";
+        }
+        String marker = "const VERSION = '";
+        int at = html.indexOf(marker);
+        if (at < 0) {
+            return "";
+        }
+        int from = at + marker.length();
+        int to = html.indexOf('\'', from);
+        if (to < 0 || to - from > 20) {
+            return "";
+        }
+        return html.substring(from, to).trim();
+    }
+
+    private static int compareVersions(String a, String b) {
+        String[] x = a.split("\\.");
+        String[] y = b.split("\\.");
+        int n = Math.max(x.length, y.length);
+        for (int i = 0; i < n; i++) {
+            int xi = i < x.length ? versionPart(x[i]) : 0;
+            int yi = i < y.length ? versionPart(y[i]) : 0;
+            if (xi != yi) {
+                return xi < yi ? -1 : 1;
+            }
+        }
+        return 0;
+    }
+
+    private static int versionPart(String s) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private boolean hasMic() {

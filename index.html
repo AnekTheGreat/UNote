@@ -552,7 +552,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.13';
+const VERSION = '1.0.14';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1621,6 +1621,7 @@ function settingsDialog() {
       '<button class="btn" id="setCheck" style="padding:7px 12px;font-size:12px">Check now</button></div>' +
       '<button class="listrow" data-whatsnew="1" style="margin-top:8px"><span class="grow"><span class="lr-t">Patch notes</span><span class="lr-s">What changed in every version, this one first.</span></span><span class="chev">\u203a</span></button>' +
       '<div id="setUpdMsg" class="hint" style="margin:8px 0 0">' + otaSummary() + '</div>' +
+      (otaSourceSummary() ? '<div class="hint" style="margin:4px 0 0">' + otaSourceSummary() + '</div>' : '') +
       (nativeFiles() && typeof nativeFiles().resetPage === 'function'
         ? '<button class="listrow" style="margin-top:8px" onclick="resetBuiltInPage()"><span class="grow"><span class="lr-t">Go back to the built-in version</span><span class="lr-s">Throw away any page this app fetched over the air and use the copy that came inside the APK.</span></span><span class="chev">\u203a</span></button>'
         : '') + '</div>' +
@@ -1971,6 +1972,19 @@ function otaSummary() {
   const newer = cmpVer(otaState.site, VERSION) > 0;
   return 'Last check at ' + when + ': reached the site, which offers ' + (otaState.site || VERSION) +
     (newer ? ' - newer than this one.' : ' - so this is the newest.');
+}
+
+/* Which page is on screen: the one that came inside the APK, or one fetched over the air. Shown in
+   Settings so a page that shadows a newer app is visible instead of looking like a mystery. */
+function otaSourceSummary() {
+  const nf = nativeFiles();
+  if (!nf || typeof nf.pageSource !== 'function') return '';
+  let s = '';
+  try { s = String(nf.pageSource() || ''); } catch (e) { return ''; }
+  if (s.indexOf('fetched') === 0) {
+    return 'This screen is a page fetched earlier (' + s.replace('fetched ', '') + '), not the copy inside the app.';
+  }
+  return 'This screen is the page that came inside the app' + (s.indexOf('built-in ') === 0 && s.length > 10 ? ' (' + s.slice(10) + ')' : '') + '.';
 }
 
 /* A quiet "Up to date" for a few seconds: proof the check ran, without a pop-up. */

@@ -1,15 +1,23 @@
 {
   "app": "UNote",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "date": "2026-11-08",
   "notes": [
-    "Photos, videos and audio files now open the phone's own picker. The app was asking the page for a file but never opening anything, so tapping the attachment button did nothing at all.",
-    "A voice memo can start: the microphone request is answered by the app, and the permission is in the manifest.",
-    "Pictures can be pasted straight into a note, including a picture copied as an image in another app.",
-    "There is an \"Any file\" row for documents and PDFs, and several files can be picked at once.",
-    "Read mode shows the note: the reading pane now fills its row instead of collapsing to nothing, re-renders when you switch to it, and falls back to plain text rather than showing an empty page."
+    "Installing a newer APK now takes effect straight away. The app keeps the page it downloaded last time in its own storage and was serving that instead of the page inside the new APK, so a fresh install could keep opening the old version and look like nothing had changed.",
+    "An out-of-date downloaded page is dropped automatically, and only a page newer than the app itself is ever served.",
+    "Settings now says whether this screen is the page that came inside the app or one fetched earlier, so a shadowed page is visible instead of mysterious."
   ],
   "history": [
+    {
+      "version": "1.0.14",
+      "date": "2026-11-08",
+      "title": "A new build takes effect immediately",
+      "notes": [
+        "Installing a newer APK now takes effect straight away. The app keeps the page it downloaded last time in its own storage and was serving that instead of the page inside the new APK, so a fresh install could keep opening the old version and look like nothing had changed.",
+        "An out-of-date downloaded page is dropped automatically, and only a page newer than the app itself is ever served.",
+        "Settings now says whether this screen is the page that came inside the app or one fetched earlier, so a shadowed page is visible instead of mysterious."
+      ]
+    },
     {
       "version": "1.0.13",
       "date": "2026-11-08",
