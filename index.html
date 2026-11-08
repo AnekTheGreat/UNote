@@ -552,7 +552,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.11';
+const VERSION = '1.0.12';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1607,7 +1607,7 @@ function settingsDialog() {
       '<div class="rowset"><span class="grow">Version <b id="setVer">' + VERSION + '</b></span>' +
       '<button class="btn" id="setCheck" style="padding:7px 12px;font-size:12px">Check now</button></div>' +
       '<button class="listrow" data-whatsnew="1" style="margin-top:8px"><span class="grow"><span class="lr-t">Patch notes</span><span class="lr-s">What changed in every version, this one first.</span></span><span class="chev">\u203a</span></button>' +
-      '<div id="setUpdMsg" class="hint" style="margin:8px 0 0">Last checked when this screen opened.</div>' +
+      '<div id="setUpdMsg" class="hint" style="margin:8px 0 0">' + otaSummary() + '</div>' +
       (nativeFiles() && typeof nativeFiles().resetPage === 'function'
         ? '<button class="listrow" style="margin-top:8px" onclick="resetBuiltInPage()"><span class="grow"><span class="lr-t">Go back to the built-in version</span><span class="lr-s">Throw away any page this app fetched over the air and use the copy that came inside the APK.</span></span><span class="chev">\u203a</span></button>'
         : '') + '</div>' +
@@ -1924,6 +1924,16 @@ async function runImport(text, mode) {
 }
 
 /* ---------------- updates (over the air) ---------------- */
+
+/* The browser copy updates through its service worker. The installed app has no service worker
+   and no download manager, so it asks this site for the update file and keeps the newest page
+   it finds in the app's own storage; MainActivity serves that copy instead of the one built
+   into the APK. */
+const OTA_HOME = 'https://anekthegreat.github.io/UNote/';
+
+/* What the last attempt did, so Settings can say it in words instead of guessing. */
+let otaState = { at: 0, ok: false, site: '', note: '', tries: 0 };
+
 function cmpVer(a, b) {
   const x = String(a || '0').split('.').map(n => parseInt(n, 10) || 0);
   const y = String(b || '0').split('.').map(n => parseInt(n, 10) || 0);
@@ -1933,24 +1943,43 @@ function cmpVer(a, b) {
   }
   return 0;
 }
-/* ---------------- updates (over the air) ---------------- */
-
-/* The browser copy updates through its service worker. The installed app has no service worker
-   and no download manager, so it asks this same site for the update file and keeps the newest
-   page it finds in the app's own storage; MainActivity serves that copy instead of the one
-   built into the APK. Nothing to install, nothing to tap twice. */
-const OTA_HOME = 'https://anekthegreat.github.io/UNote/';
 
 function otaBase() {
   const nf = nativeFiles();
   return (nf && typeof nf.savePage === 'function') ? OTA_HOME : '';
 }
 
+function otaSummary() {
+  if (!otaState.at) return 'Not checked yet in this session.';
+  const when = new Date(otaState.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (!otaState.ok) {
+    return 'Last try at ' + when + ' did not get through (' + otaState.note + '). It tries again by itself, and whenever you reopen the app.';
+  }
+  const newer = cmpVer(otaState.site, VERSION) > 0;
+  return 'Last check at ' + when + ': reached the site, which offers ' + (otaState.site || VERSION) +
+    (newer ? ' - newer than this one.' : ' - so this is the newest.');
+}
+
+/* A quiet "Up to date" for a few seconds: proof the check ran, without a pop-up. */
+function flashUpToDate() {
+  const chip = $('#updChip');
+  if (!chip || !chip.hidden) return;
+  chip.hidden = false;
+  chip.textContent = 'Up to date \u00b7 ' + VERSION;
+  setTimeout(() => {
+    if (chip.textContent.indexOf('Up to date') === 0) {
+      chip.hidden = true;
+      chip.textContent = '';
+    }
+  }, 5000);
+}
+
 async function checkUpdate(manual) {
   try {
     const r = await fetch(otaBase() + 'updates.json?t=' + nowMs(), { cache: 'no-store' });
-    if (!r.ok) throw new Error('no updates file');
+    if (!r.ok) throw new Error('the server answered ' + r.status);
     const j = await r.json();
+    otaState = { at: Date.now(), ok: true, site: j.version || '', note: '', tries: otaState.tries + 1 };
     if (cmpVer(j.version, VERSION) > 0) {
       const chip = $('#updChip');
       chip.hidden = false;
@@ -1959,12 +1988,35 @@ async function checkUpdate(manual) {
       if (manual) toast('Version ' + j.version + ' is ready. Tap the chip to take it.', 4200);
       return 'Version ' + j.version + ' is ready. Tap the chip at the bottom to take it.';
     }
-    $('#updChip').hidden = true;
-    return 'You are on the newest version (' + VERSION + ').';
+    const chip = $('#updChip');
+    chip.hidden = true;
+    chip.textContent = '';
+    if (otaBase()) flashUpToDate();   // in the installed app only: visible proof the check ran
+    return 'You are on the newest version (' + VERSION + '), and the site agrees (' + j.version + ').';
   } catch (e) {
-    if (manual) toast(otaBase() ? 'Could not reach the update server.' : 'Could not check for updates.', 4000);
-    return 'Could not check for updates right now.';
+    otaState = { at: Date.now(), ok: false, site: '', note: e.message || 'no answer', tries: otaState.tries + 1 };
+    if (manual) toast('Could not check for updates: ' + (e.message || 'no answer'), 4600);
+    return 'Could not check for updates: ' + (e.message || 'no answer');
   }
+}
+
+/* The boot check could not be one silent attempt: on a real phone the first second after launch
+   is often too early for the network. Try again a few times, then again whenever the app comes
+   back to the front. */
+function watchForUpdates() {
+  const delays = [1200, 6000, 20000];
+  const attempt = i => {
+    if (i >= delays.length) return;
+    setTimeout(async () => {
+      if (otaState.ok) return;
+      await checkUpdate(false);
+      if (!otaState.ok) attempt(i + 1);
+    }, delays[i]);
+  };
+  attempt(0);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkUpdate(false);
+  });
 }
 
 async function applyUpdate(j) {
@@ -1974,7 +2026,7 @@ async function applyUpdate(j) {
     toast('Fetching ' + want + '...', 3000);
     try {
       const r = await fetch(OTA_HOME + 'index.html?t=' + nowMs(), { cache: 'no-store' });
-      if (!r.ok) throw new Error('the page did not come back');
+      if (!r.ok) throw new Error('the page did not come back (' + r.status + ')');
       const page = await r.text();
       if (page.length < 40000 || page.indexOf("const VERSION = '") < 0) throw new Error('that did not look like UNote');
       nf.savePage(page);
@@ -2165,7 +2217,7 @@ async function boot() {
   });
   if (S.settings.seen && S.settings.seen !== VERSION) setTimeout(() => patchNotesDialog(true), 1100);
   if (S.settings.seen !== VERSION) { S.settings.seen = VERSION; kvSet('settings', S.settings).catch(() => {}); }
-  setTimeout(() => checkUpdate(false), 1200);
+  watchForUpdates();
 
   // rail
   $$('#rail .rbtn[data-go]').forEach(b => b.addEventListener('click', () => {

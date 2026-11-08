@@ -1,14 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "date": "2026-11-08",
   "notes": [
-    "The installed app updates itself now. It asks the UNote site once at launch, and when there is a newer version a chip says so: one tap fetches it, keeps it inside the app and reopens on it. No store, no APK to download, nothing to install.",
-    "The app asks the network for exactly two things: that update file, and the page when you take an update. Notes, the Vault, backups and attachments still never leave the phone.",
-    "Settings has one way back: \"Go back to the built-in version\" throws away a fetched page and returns to the copy that came inside the APK.",
-    "This is the one version that still has to be installed by hand - the version before it had no way to hear about updates. After this, the fixes arrive on their own."
+    "The update check tries again instead of giving up. It used to ask once, a second after the app opened - often before the phone had a signal - and say nothing if that failed.",
+    "It now retries a few times, and checks again every time you come back to the app.",
+    "When there is nothing newer, a quiet \"Up to date\" shows for a few seconds, so you can see the check ran instead of hoping it did.",
+    "Settings reports the last check in words: the time, whether it got through, which version the site offers - or why it did not get through."
   ],
   "history": [
+    {
+      "version": "1.0.12",
+      "date": "2026-11-08",
+      "title": "The update check tries, and says what it did",
+      "notes": [
+        "The update check tries again instead of giving up. It used to ask once, a second after the app opened - often before the phone had a signal - and say nothing if that failed.",
+        "It now retries a few times, and checks again every time you come back to the app.",
+        "When there is nothing newer, a quiet \"Up to date\" shows for a few seconds, so you can see the check ran instead of hoping it did.",
+        "Settings reports the last check in words: the time, whether it got through, which version the site offers - or why it did not get through."
+      ]
+    },
     {
       "version": "1.0.11",
       "date": "2026-11-08",
