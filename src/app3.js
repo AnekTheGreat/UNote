@@ -252,6 +252,40 @@ function hexA(hex, a) {
   return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
 }
 
+/* ---------------- the other apps ---------------- */
+/* One page that says what else this person made, with a single door per app. Every link leaves for the
+   phone's own browser or the Play Store: the app holds no network of its own, so a link that opened
+   inside it would be a blank screen, and this way the note you were reading is still behind you. */
+const OTHER_APPS = [
+  ['FamTM', 'The family tree in your pocket: people, birthdays and photos, kept on the phone.', 'https://play.google.com/store/apps/details?id=com.FamTM.app', 'F'],
+  ['SideCut', 'A music player with its own equaliser and its own way of filing a library.', 'https://play.google.com/store/apps/details?id=com.SideCut.myapp', 'S'],
+  ['MeasureT', 'Elevation, location, a level and a converter, all on one screen.', 'https://play.google.com/store/apps/details?id=com.CompassEDC.myapp', 'M'],
+  ['My Hub', 'One screen that launches these apps and holds the update for each in one place.', 'https://github.com/AnekTheGreat/My-Hub/releases', 'H'],
+  ['UJournal', 'A journal for the days you bother to write down, from the same hand as the tree.', 'https://github.com/AnekTheGreat/Journal', 'J'],
+];
+function otherAppsDialog() {
+  const d = dialog({
+    cls: 'wide',
+    title: 'Other apps',
+    body: '<div class="hint" style="margin:0 0 12px">Made by the same person who made UNote. Not one of them asks you to sign in, and none of them is watching.</div>' +
+      OTHER_APPS.map(a =>
+        '<div class="appcard"><div class="tile">' + esc(a[3] || a[0].charAt(0)) + '</div>' +
+        '<span class="grow"><b>' + esc(a[0]) + '</b><small>' + esc(a[1]) + '</small></span>' +
+        '<a class="go" href="' + esc(a[2]) + '" target="_blank" rel="noopener">Open</a></div>').join('') +
+      '<div class="hint" style="margin:12px 0 0">A tap leaves for the browser or the Play Store and comes back to this note.</div>',
+    foot: '<div class="grow"></div><button class="btn primary" data-close="1">Done</button>',
+  });
+  $$('[data-close]', d).forEach(b => b.addEventListener('click', closeDialog));
+}
+/* Two doors, one listener: the footer button and the row in Settings both carry data-apps, so either one
+   opens the same sheet and an older page with neither simply has no button to press. */
+document.addEventListener('click', e => {
+  const t = e.target && e.target.closest ? e.target.closest('[data-apps]') : null;
+  if (!t) return;
+  e.preventDefault();
+  otherAppsDialog();
+});
+
 function patchNotesDialog(justUpdated) {
   const d = dialog({
     cls: 'wide',
@@ -317,7 +351,8 @@ function settingsDialog() {
       '<div id="setUpdMsg" class="hint" style="margin:8px 0 0">Last checked when this screen opened.</div></div>' +
 
       '<div class="setsec"><h4>About</h4><div class="sub">UNote - a notebook that links itself, with a vault that asks for a PIN. Made to be used for everything.</div>' +
-      '<div class="hint" style="margin:0">Version ' + VERSION + ' · ' + APP + ' · works offline · no account, no tracking, no server.</div></div>',
+              '<button class="listrow" data-apps="1" style="margin-top:10px"><span class="grow"><span class="lr-t">Other apps</span><span class="lr-s">FamTM, SideCut, MeasureT, My Hub and UJournal - the rest of the shelf.</span></span><span class="chev">›</span></button>' +
+        '<div class="hint" style="margin:0">Version ' + VERSION + ' · ' + APP + ' · works offline · no account, no tracking, no server.</div></div>',
   });
   $('#setTheme', dlg).addEventListener('click', e => {
     const b = e.target.closest('[data-t]'); if (!b) return;

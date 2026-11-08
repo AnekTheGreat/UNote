@@ -1,13 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "date": "November 8, 2026",
   "notes": [
-    "The icon is redrawn: the note card now fills the icon instead of sitting inside a black circle at the bottom right.",
-    "The two link dots rest on the card and part along a hairline, so the only dark line left is a hair thin one.",
-    "Adaptive, round, themed and home-screen icons are redrawn together, so the APK and the installed page match."
+    "Liquid glass: every panel, card and sheet is now a pane with a soft edge, a blur behind it and a line of light along the top, so the app reads as one surface instead of a stack of boxes.",
+    "Other apps: a new list - FamTM, SideCut, MeasureT, My Hub and UJournal - each with one honest line about it and one tap to open it. It sits in the footer and in Settings.",
+    "Calmer controls: rounder buttons, softer rows, a clearer accent, and the text size and accent colour you pick are still yours.",
+    "A link in that list opens in the phone browser or the Play Store and comes back to the note you were on; the app itself still asks the network for nothing."
   ],
   "history": [
+    {
+      "version": "1.0.5",
+      "date": "November 8, 2026",
+      "title": "Liquid glass, and the rest of the shelf",
+      "notes": [
+        "Liquid glass: every panel, card and sheet is now a pane with a soft edge, a blur behind it and a line of light along the top, so the app reads as one surface instead of a stack of boxes.",
+        "Other apps: a new list - FamTM, SideCut, MeasureT, My Hub and UJournal - each with one honest line about it and one tap to open it. It sits in the footer and in Settings.",
+        "Calmer controls: rounder buttons, softer rows, a clearer accent, and the text size and accent colour you pick are still yours.",
+        "A link in that list opens in the phone browser or the Play Store and comes back to the note you were on; the app itself still asks the network for nothing."
+      ]
+    },
     {
       "version": "1.0.4",
       "date": "November 8, 2026",

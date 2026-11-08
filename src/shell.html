@@ -10,22 +10,25 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <style>
-:root{
-  --accent:#7c5cff; --accent-soft:rgba(124,92,255,.16); --accent-ink:#fff;
-  --bg:#0e1016; --panel:#141823; --panel2:#1a1f2c; --panel3:#20263340;
-  --line:#252b3a; --line2:#313849;
-  --ink:#e9ecf4; --dim:#9aa3b8; --dim2:#6f788c;
-  --ok:#34d399; --warn:#fbbf24; --err:#f87171;
-  --r:14px; --r-sm:10px; --shadow:0 18px 44px rgba(0,0,0,.45);
-  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --size:16px;
-}
-[data-theme="light"]{
-  --bg:#f5f6fb; --panel:#ffffff; --panel2:#f1f3f9; --panel3:#eef1f8;
-  --line:#e2e6f0; --line2:#d3d9e6; --ink:#161922; --dim:#5b6376; --dim2:#858da1;
-  --accent-soft:rgba(124,92,255,.12);
-  --shadow:0 18px 44px rgba(30,36,54,.16);
-}
+  :root{
+    --accent:#8b6cff; --accent-soft:rgba(139,108,255,.18); --accent-ink:#fff;
+    --bg:#0b0d14; --panel:rgba(26,31,45,.62); --panel2:rgba(255,255,255,.06); --panel3:rgba(255,255,255,.10);
+    --glass:rgba(255,255,255,.055); --glass-line:rgba(255,255,255,.10); --glass-hi:rgba(255,255,255,.20);
+    --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+    --ink:#eef1f8; --dim:#a8b1c7; --dim2:#7d869b;
+    --ok:#3ee0a6; --warn:#ffc857; --err:#ff8080;
+    --r:18px; --r-sm:13px; --shadow:0 28px 64px rgba(0,0,0,.55);
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --size:16px;
+  }
+  [data-theme="light"]{
+    --bg:#eef1f9; --panel:rgba(255,255,255,.72); --panel2:rgba(255,255,255,.66); --panel3:rgba(255,255,255,.55);
+    --glass:rgba(255,255,255,.62); --glass-line:rgba(18,24,42,.10); --glass-hi:rgba(255,255,255,.95);
+    --line:rgba(18,24,42,.10); --line2:rgba(18,24,42,.17);
+    --ink:#151922; --dim:#525b6e; --dim2:#7d8597;
+    --accent-soft:rgba(124,92,255,.12);
+    --shadow:0 24px 52px rgba(28,34,54,.18);
+  }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{
@@ -315,6 +318,72 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 @media (max-width:520px){
   .crumbs{display:none}
 }
+  /* ---- liquid glass ---- */
+  /* Every surface is a pane: a little light along the top edge, a blur of what is behind it, and the
+     same radius everywhere, so the shelf of panels reads as one piece of glass rather than five boxes. */
+  #app{
+    background:
+      radial-gradient(58% 48% at 10% -4%,rgba(139,108,255,.30),transparent 62%),
+      radial-gradient(52% 44% at 94% 6%,rgba(62,224,166,.15),transparent 60%),
+      radial-gradient(70% 60% at 50% 112%,rgba(88,120,255,.20),transparent 66%),
+      var(--bg);
+  }
+  #rail{background:rgba(255,255,255,.045);border-right:1px solid var(--glass-line);backdrop-filter:blur(22px) saturate(150%)}
+  #side,#right{background:var(--glass);border-color:var(--glass-line);backdrop-filter:blur(24px) saturate(155%)}
+  #main{background:transparent}
+  .rbtn{border-radius:14px}
+  .rbtn.on{background:linear-gradient(180deg,rgba(139,108,255,.30),rgba(139,108,255,.14));box-shadow:inset 0 1px 0 rgba(255,255,255,.20)}
+  .quick button,.btn,.listrow,.setsec,.pinpad button,.seg button,.modes,.navrow,.noteitem,.folderrow,.tagchip,.palitem{
+    backdrop-filter:blur(14px) saturate(140%);
+  }
+  .btn,.listrow,.setsec,.pinpad button,.quick button{
+    background:var(--panel2);border-color:var(--glass-line);
+    box-shadow:inset 0 1px 0 var(--glass-hi),0 8px 22px rgba(0,0,0,.16);
+  }
+  .btn{border-radius:12px;padding:10px 15px}
+  .btn:hover{background:rgba(255,255,255,.10);border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 76%,#000));border-color:var(--accent);color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 10px 24px color-mix(in srgb,var(--accent) 32%,transparent)}
+  .btn.primary:hover{filter:brightness(1.07);color:#fff}
+  .btn.danger{background:rgba(255,128,128,.10);border-color:rgba(255,128,128,.38);color:var(--err);box-shadow:none}
+  .btn.ghost{background:none;border-color:transparent;box-shadow:none}
+  .listrow{border-radius:16px;margin-bottom:9px}
+  .listrow:hover{background:rgba(255,255,255,.09);border-color:var(--accent)}
+  .setsec{border-radius:18px}
+  .tagchip{border-radius:20px}
+  #dlg{
+    background:color-mix(in srgb,var(--panel) 88%,transparent);
+    border:1px solid var(--glass-line);border-radius:22px;
+    backdrop-filter:blur(30px) saturate(160%);
+    box-shadow:0 34px 80px rgba(0,0,0,.60),inset 0 1px 0 var(--glass-hi);
+  }
+  #dlg::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(155deg,rgba(255,255,255,.11),rgba(255,255,255,0) 44%)}
+  #dlgBody{position:relative}
+  #scrim{background:rgba(6,8,14,.55);backdrop-filter:blur(10px) saturate(120%)}
+  .dlghead,.dlgfoot{border-color:var(--glass-line)}
+  .dlgfoot{background:rgba(255,255,255,.045)}
+  #toast{background-color:color-mix(in srgb,var(--panel) 90%,transparent);border-color:var(--glass-line);border-radius:16px;
+    backdrop-filter:blur(18px) saturate(150%);box-shadow:0 18px 40px rgba(0,0,0,.42),inset 0 1px 0 var(--glass-hi)}
+  .sidefoot{border-color:var(--glass-line)}
+  .field input,.field select,.field textarea{background:rgba(255,255,255,.05);border-color:var(--glass-line);border-radius:12px}
+  [data-theme="light"] .field input,[data-theme="light"] .field select,[data-theme="light"] .field textarea,
+  [data-theme="light"] .btn,[data-theme="light"] .listrow,[data-theme="light"] .setsec{background:rgba(255,255,255,.78)}
+  [data-theme="light"] #dlg{background:rgba(255,255,255,.82)}
+  .md code,.md pre,.md th{background:var(--panel2)}
+  /* the shelf itself: one card per app, a tile, a line, one door */
+  .appcard{display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:9px;border-radius:18px;
+    border:1px solid var(--glass-line);background:var(--panel2);
+    box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 26px rgba(0,0,0,.16);backdrop-filter:blur(14px) saturate(140%)}
+  .appcard .tile{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none;
+    font-weight:700;font-size:16px;color:#fff;background:linear-gradient(160deg,var(--accent),#4b34c9);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.36),0 8px 18px rgba(76,52,201,.32)}
+  .appcard .grow{flex:1;min-width:0}
+  .appcard b{display:block;font-size:13.5px;font-weight:650}
+  .appcard small{display:block;font-size:11.5px;color:var(--dim2);line-height:1.4;margin-top:2px}
+  .appcard .go{flex:none;text-decoration:none;border:1px solid var(--glass-line);border-radius:12px;padding:8px 13px;
+    font-size:12.5px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.07);box-shadow:inset 0 1px 0 var(--glass-hi)}
+  .appcard .go:hover{border-color:var(--accent);color:var(--accent)}
 </style>
 </head>
 <body data-mode="split">
@@ -407,6 +476,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
       <span id="sSaved"></span>
       <div class="grow"></div>
       <button class="btn" id="btnWhats" title="What changed in each version" style="padding:4px 10px;font-size:11px">What's new</button>
+      <button class="btn" data-apps="1" title="The other apps made alongside this one" style="padding:4px 10px;font-size:11px">Apps</button>
       <button id="updChip" hidden></button>
       <span id="sVer"></span>
     </footer>

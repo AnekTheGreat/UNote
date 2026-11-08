@@ -1,6 +1,8 @@
 package app.unote;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebResourceRequest;
@@ -44,6 +46,20 @@ public class MainActivity extends Activity {
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return loader.shouldInterceptRequest(request.getUrl());
             }
+                @Override
+                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                    Uri u = request.getUrl();
+                    String host = (u == null || u.getHost() == null) ? "" : u.getHost();
+                    if (host.equals("appassets.androidplatform.net")) {
+                        return false;                       // the page itself stays in the app
+                    }
+                    try {                                   // anything else belongs to the phone
+                        startActivity(new Intent(Intent.ACTION_VIEW, u).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } catch (Exception ignored) {
+                        // no browser and no store: the tap does nothing rather than breaking the page
+                    }
+                    return true;
+                }
         });
 
         setContentView(web);
