@@ -508,7 +508,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.6';
+const VERSION = '1.0.7';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1233,18 +1233,26 @@ async function onboard() {
   const d = dialog({
     body: '<div style="text-align:center;padding:6px 0 2px">' +
       '<div style="font-size:30px;font-weight:700;letter-spacing:-1px">U<b style="color:var(--accent)">Note</b></div>' +
-      '<div class="sub" style="color:var(--dim);font-size:13px;margin-top:6px">Notes, links and a private vault. Everything stays on this device.</div></div>' +
-      '<div class="hint" style="text-align:center;margin:18px 0 6px">First, choose a PIN for your Vault. It is the only key - nobody, not even this app, can recover it.</div>',
-    foot: '<div class="grow"></div><button class="btn primary" id="obGo">Choose my PIN</button>',
+      '<div class="sub" style="color:var(--dim);font-size:13px;margin-top:6px">A notebook that stays on this phone.</div></div>' +
+      '<div class="hint" style="text-align:center;margin:18px 0 6px">Write in a note, and that is the whole app. A private Vault, behind a PIN, is there whenever you want one.</div>',
+    foot: '<div class="grow"></div><button class="btn" id="obPin">Set up the Vault</button><button class="btn primary" id="obGo">Start writing</button>',
   });
-  $('#obGo', d).addEventListener('click', () => {
+  const done = () => {
+    S.settings.onboarded = true;
+    kvSet('settings', S.settings);
+    seedWelcome();
+    renderSide();
+    const first = sortNotes(liveNotes()).find(n => !n.deleted);
+    if (first) { S.current = first; renderDoc(); } else renderDoc();
+  };
+  $('#obGo', d).addEventListener('click', () => { closeDialog(); done(); });
+  $('#obPin', d).addEventListener('click', () => {
     closeDialog();
     askNewPin(function afterCreate() {
-      S.settings.onboarded = true;
-      kvSet('settings', S.settings);
-      toast('Vault created. Welcome to UNote.');
-      seedWelcome();
-      renderSide(); renderDoc();
+      done();
+      S.view = 'vault';
+      renderSide();
+      toast('Vault created.');
     });
   });
 }
@@ -1920,16 +1928,13 @@ function seedWelcome() {
   if (S.notes.length) return;
   const t = nowMs();
   S.notes.push({
-    id: uid(), title: 'Welcome to UNote', folder: '', fav: true, created: t, updated: t, deleted: 0,
-    body: 'This is a note. Everything here is plain text, saved on this device only.\n\n' +
-      '## The two things that make it a notebook\n\n' +
-      '- **Links** - type [[' + 'Another note' + ']] and the two are connected. The right side shows what links back here, and the Graph shows the whole web.\n' +
-      '- **Tags** - write #idea or #todo anywhere and it appears under Tags on the left.\n\n' +
-      '## The Vault\n\n' +
-      'The lock on the left rail opens a second space, sealed with the PIN you just chose. Notes in the Vault are written to the phone encrypted: without the PIN they are unreadable, even to this app.\n\n' +
-      '## Carrying it with you\n\n' +
-      'Settings → Your data has **Export everything** (one file), **Transfer to another device** (one code you can paste on the other phone) and **Import**.\n\n' +
-      '- [ ] Write a first real note\n- [ ] Link it to this one\n\n#start',
+    id: uid(), title: 'Welcome', folder: '', fav: true, created: t, updated: t, deleted: 0,
+    body: 'This is a note. Tap it and type - that is the whole app.\n\n' +
+      'Two things you can do as you go:\n\n' +
+      '- Type [[another note]] and the two are linked, in both directions.\n' +
+      '- Type #idea anywhere and it shows up under Tags.\n\n' +
+      'The lock on the left is the Vault: a private space for notes, behind a PIN you choose the first time you open it. Nothing else here needs setting up.\n\n' +
+      '- [ ] Write something real\n\n#start',
   });
   saveNote(S.notes[0], { quiet: true });
 }
