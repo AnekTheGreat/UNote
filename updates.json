@@ -1,0 +1,12 @@
+{
+  "app": "UNote",
+  "version": "1.0.2",
+  "date": "November 7, 2026",
+  "notes": [
+    "The line above a note keeps up as you type: the title, the word count and the reading time now follow the words instead of waiting for a redraw.",
+    "Creating the Vault is one form now: type the PIN, type it again, done - instead of two dialogs in a row that could lose the second half.",
+    "The rest of the first release: notes, folders, tags, [[links]] with backlinks and a graph, and a Vault that is encrypted on the device.",
+    "Export everything to one file, carry it to another phone as a code, or import a backup.",
+    "Offline first, and updates arrive over the air."
+  ]
+}
