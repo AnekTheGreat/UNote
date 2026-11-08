@@ -2,8 +2,13 @@
 
 Notes that link themselves, with a Vault behind a PIN.
 
-- App: https://site-e28e804444934263a1f0838974d59f45.freebuff.page
-- This repo publishes the same build on GitHub Pages: https://anekthegreat.github.io/UNote/
+- **App:** https://anekthegreat.github.io/UNote/
+- **APK:** https://github.com/AnekTheGreat/UNote/releases/latest/download/UNote.apk
+
+The two are the same build. The page runs in any browser and installs to a home
+screen; the APK is the same page in an Android app, bundled inside so it needs no
+network at all. Notes stay with whichever one you use - they are kept by the app on
+the device, not in this repository.
 
 ## What it is
 
@@ -35,6 +40,7 @@ Your notes live in the browser's storage on your device and nowhere else.
 | `updates.json` | the newest version and what changed |
 | `manifest.webmanifest` | how it installs to a home screen |
 | `dev/build.py` | joins `src/` into `index.html` |
+| `android/` | the APK: a WebView that serves `index.html` from assets |
 
 ## Working on it
 
@@ -49,20 +55,31 @@ page first, so after a change bump the version (below) or unregister it.
 
 ## Releasing
 
-The app checks `updates.json` shortly after launch and offers the update.
+The app checks `updates.json` shortly after launch and offers the update; the APK
+is rebuilt by **APK** on every push that touches the page or `android/`.
 
 1. `src/app1.js`: bump `const VERSION = 'x.y.z';`
 2. `sw.js`: bump the cache name `unote-vx.y.z` - this is what makes an
    installed copy take the new build
 3. `updates.json`: set `version`, `date`, and the notes people will read
-4. `python3 dev/build.py`, then publish
-5. Run **Sync the published build** (Actions) to bring this repo up to date;
-   it also publishes the repo on Pages
+4. `android/app/build.gradle`: bump `versionCode` (and `appVersion`)
+5. `python3 dev/build.py`, then publish
+6. Run **Sync the published build** so this repository matches what is live
 
-`Sync` refuses to commit a page that does not match `src/`, or one that calls
-out to the network, so the repo and the live app cannot drift apart silently.
+## Signing the APK
+
+The APK workflow signs with the upload keystore when these repository secrets are
+set, and otherwise publishes a debug-signed build that still installs:
+
+| secret | what it is |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | the `.jks`, base64 encoded |
+| `ANDROID_KEYSTORE_PASSWORD` | the store password |
+| `ANDROID_KEY_PASSWORD` | the key password |
+| `ANDROID_KEY_ALIAS` | the key alias |
+
+No keystore material belongs in this repository.
 
 ## Where else it appears
 
-In the Other apps list of SideCut (83.2.3 and later), and in My Hub, FamTM and
-MeasureT once `dev/add-unote.py` is run in those repositories.
+In the Other apps lists of SideCut, My Hub, FamTM and MeasureT.
