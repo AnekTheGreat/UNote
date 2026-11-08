@@ -1400,16 +1400,87 @@ async function addFiles(files) {
   toast(done === 1 ? 'Added to the note.' : 'Added ' + done + ' to the note.');
 }
 
-function mediaPaste(e) {
-  const dt = e.clipboardData;
-  if (!dt) return;
+/* A picture on the clipboard arrives three different ways depending on the phone: as a file
+   item, as an <img src="data:..."> inside text/html, or as a bare data: URL in text/plain.
+   All three are turned into a normal File, so everything after this point is the same. */
+function fileFromDataUrl(url, fallbackName) {
+  const m = /^data:([^;,]+)(;base64)?,([\s\S]*)$/.exec(String(url || ''));
+  if (!m) return null;
+  try {
+    const bin = m[2] ? atob(m[3].replace(/\s+/g, '')) : decodeURIComponent(m[3]);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const ext = (m[1].split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const name = fallbackName || ('Pasted ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '.' + ext);
+    return new File([bytes], name, { type: m[1] });
+  } catch (e) {
+    return null;
+  }
+}
+
+function filesFromHtml(html) {
+  const out = [];
+  const re = /<img[^>]+src=["'](data:image\/[^"']+)["']/gi;
+  let m;
+  while ((m = re.exec(String(html || '')))) {
+    const f = fileFromDataUrl(m[1]);
+    if (f) out.push(f);
+  }
+  return out;
+}
+
+function clipboardFiles(dt) {
   const files = [];
+  Array.from(dt.files || []).forEach(f => files.push(f));
   Array.from(dt.items || []).forEach(it => {
     if (it.kind === 'file') { const f = it.getAsFile(); if (f) files.push(f); }
   });
+  const html = dt.getData ? dt.getData('text/html') : '';
+  if (html) filesFromHtml(html).forEach(f => files.push(f));
+  const plain = dt.getData ? dt.getData('text/plain') : '';
+  if (plain && /^data:image\//i.test(plain.trim())) {
+    const f = fileFromDataUrl(plain.trim());
+    if (f) files.push(f);
+  }
+  return files;
+}
+
+function mediaPaste(e) {
+  const dt = e.clipboardData;
+  if (!dt) return;
+  const files = clipboardFiles(dt);
   if (!files.length) return;
   e.preventDefault();
   addFiles(files);
+}
+
+/* The attach sheet's "Paste from the clipboard": for a picture copied from another app that
+   does not reach the page as a paste event. */
+async function pasteFromClipboard() {
+  closeDialog();
+  if (!navigator.clipboard || typeof navigator.clipboard.read !== 'function') {
+    toast('This phone will not hand over its clipboard here. Long-press in the note and choose Paste instead.', 5200);
+    return;
+  }
+  try {
+    const items = await navigator.clipboard.read();
+    const files = [];
+    for (const it of items) {
+      for (const type of it.types) {
+        if (type.indexOf('image/') !== 0) continue;
+        const blob = await it.getType(type);
+        const ext = (type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+        files.push(new File([blob],
+          'Pasted ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '.' + ext,
+          { type: type }));
+      }
+    }
+    if (!files.length) { toast('There is no picture in the clipboard.'); return; }
+    await addFiles(files);
+  } catch (e) {
+    toast('Could not read the clipboard (' + (e && e.message ? e.message : 'blocked') +
+      '). Long-press in the note and choose Paste instead.', 5200);
+  }
 }
 
 function attachDialog() {
@@ -1420,18 +1491,23 @@ function attachDialog() {
         (S.current.vault ? ' This note is in the Vault, so anything added is sealed with your PIN.' : '') + '</div>' +
       '<button class="listrow" data-att="media"><span class="grow"><span class="lr-t">Photo or video</span><span class="lr-s">Pick one from this phone.</span></span><span class="chev">\u203a</span></button>' +
       '<button class="listrow" data-att="audio"><span class="grow"><span class="lr-t">Audio file</span><span class="lr-s">A recording you already have.</span></span><span class="chev">\u203a</span></button>' +
+      '<button class="listrow" data-att="any"><span class="grow"><span class="lr-t">Any file</span><span class="lr-s">A PDF, a document, whatever it is.</span></span><span class="chev">\u203a</span></button>' +
+      '<button class="listrow" data-att="paste"><span class="grow"><span class="lr-t">Paste from the clipboard</span><span class="lr-s">A picture you just copied.</span></span><span class="chev">\u203a</span></button>' +
       '<button class="listrow" data-att="voice"><span class="grow"><span class="lr-t">Voice memo</span><span class="lr-s">Record it here and it goes into the note.</span></span><span class="chev">\u203a</span></button>' +
       '<div class="hint" style="margin:10px 0 0">Pasting a photo or a file straight into a note works too.</div>' +
       '<input type="file" id="attPhoto" accept="image/*,video/*" hidden multiple>' +
-      '<input type="file" id="attAudio" accept="audio/*" hidden multiple>',
+      '<input type="file" id="attAudio" accept="audio/*" hidden multiple>' +
+      '<input type="file" id="attAny" accept="*/*" hidden multiple>',
   });
   d.addEventListener('click', e => {
     const b = e.target.closest('[data-att]'); if (!b) return;
     if (b.dataset.att === 'media') { $('#attPhoto', d).click(); return; }
     if (b.dataset.att === 'audio') { $('#attAudio', d).click(); return; }
+    if (b.dataset.att === 'any') { $('#attAny', d).click(); return; }
+    if (b.dataset.att === 'paste') { pasteFromClipboard(); return; }
     recordVoiceMemo();
   });
-  $$('#attPhoto,#attAudio', d).forEach(inp => inp.addEventListener('change', e => {
+  $$('#attPhoto,#attAudio,#attAny', d).forEach(inp => inp.addEventListener('change', e => {
     const files = e.target.files;
     closeDialog();
     addFiles(files);

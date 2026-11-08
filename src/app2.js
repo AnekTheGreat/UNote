@@ -104,8 +104,7 @@ function renderDoc() {
   doc.hidden = false; empty.hidden = true;
   if (document.activeElement !== $('#title')) $('#title').value = n.title || '';
   if (document.activeElement !== $('#ed')) $('#ed').value = n.body || '';
-  $('#pv').innerHTML = md(n.body || '');
-  hydrateMedia($('#pv'));
+  showReading();
 
   const tags = tagOf(n.body);
   $('#crumbs').innerHTML = (n.vault ? 'Vault' : 'Notes') +
@@ -119,6 +118,19 @@ function renderDoc() {
   $('#btnFav').classList.toggle('on', !!n.fav);
   $('#sWords').textContent = words(n.body) + ' words';
   renderRight();
+}
+
+/* One place that fills the reading pane, so Read mode can never come up blank: if the markdown
+   renderer ever fails, the note's own text is shown instead of an empty pane. */
+function showReading() {
+  const pv = $('#pv');
+  if (!pv || !S.current) return;
+  try {
+    pv.innerHTML = md(S.current.body || '');
+    hydrateMedia(pv);
+  } catch (e) {
+    pv.textContent = S.current.body || '';
+  }
 }
 
 function refreshDocMeta() {
@@ -209,6 +221,7 @@ function setMode(mode) {
   document.body.dataset.mode = mode;
   $('#panes').classList.toggle('split', mode === 'split');
   $$('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  if (mode !== 'edit') showReading();      // switching to Read always renders the note
   kvSet('settings', S.settings);
 }
 

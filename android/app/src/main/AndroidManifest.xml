@@ -5,6 +5,10 @@
          update. Notes, the Vault, backups and attachments never leave the phone. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Only for a voice memo recorded inside a note. The app asks the phone first, and
+         the recording stays in the note. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <application
         android:allowBackup="true"
         android:hardwareAccelerated="true"

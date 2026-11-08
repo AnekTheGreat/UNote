@@ -2,6 +2,12 @@ package app.unote;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -45,6 +51,12 @@ public class MainActivity extends Activity {
     private String pendingText;
     private String pendingName;
     private File otaFile;
+    private static final int REQ_FILES = 43;
+    private static final int REQ_MIC = 44;
+
+    private ValueCallback<Uri[]> fileCallback;
+    private PermissionRequest micRequest;
+
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -63,7 +75,8 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
+        settings.setAllowContentAccess(true);    // the picker hands files back as content://
+        settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setTextZoom(100);
         web.setBackgroundColor(0xFF0D0B14);
         web.setWebViewClient(new WebViewClientCompat() {
@@ -94,6 +107,70 @@ public class MainActivity extends Activity {
                 }
         });
         web.addJavascriptInterface(new Files(), "UNoteFile");
+
+        /* A WebView will not open a file picker by itself: without onShowFileChooser, the page's
+           "photo or video" button does nothing at all. The microphone is refused for the same
+           reason, so a voice memo could never start. Both are answered here. */
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> cb, FileChooserParams params) {
+                if (fileCallback != null) {
+                    fileCallback.onReceiveValue(null);
+                }
+                fileCallback = cb;
+                Intent i = null;
+                try {
+                    i = params.createIntent();
+                } catch (Exception ignored) {
+                    i = null;
+                }
+                if (i == null) {
+                    i = new Intent(Intent.ACTION_GET_CONTENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType("*/*");
+                }
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                try {
+                    startActivityForResult(i, REQ_FILES);
+                } catch (Exception e) {
+                    fileCallback = null;
+                    cb.onReceiveValue(null);
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        boolean wantsMic = false;
+                        for (String r : request.getResources()) {
+                            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) {
+                                wantsMic = true;
+                            }
+                        }
+                        if (!wantsMic) {
+                            request.deny();
+                            return;
+                        }
+                        if (hasMic()) {
+                            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                            return;
+                        }
+                        micRequest = request;
+                        try {
+                            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_MIC);
+                        } catch (Exception e) {
+                            micRequest = null;
+                            request.deny();
+                        }
+                    }
+                });
+            }
+        });
+
 
         setContentView(web);
         if (state != null) {
@@ -232,6 +309,12 @@ public class MainActivity extends Activity {
                 return;
             }
             writeInBackground(uri, text);
+        } else if (req == REQ_FILES) {
+            ValueCallback<Uri[]> cb = fileCallback;
+            fileCallback = null;
+            if (cb != null) {
+                cb.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(res, data));
+            }
         } else if (req == REQ_PICK) {
             if (uri == null) {
                 tell("window.UNotePicked && window.UNotePicked(false)");
@@ -292,6 +375,42 @@ public class MainActivity extends Activity {
                 tell("window.UNotePicked && window.UNotePicked(true)");
             }
         }).start();
+    }
+
+    private boolean hasMic() {
+        try {
+            return checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int req, String[] perms, int[] granted) {
+        super.onRequestPermissionsResult(req, perms, granted);
+        if (req != REQ_MIC) {
+            return;
+        }
+        boolean ok = granted.length > 0 && granted[0] == PackageManager.PERMISSION_GRANTED;
+        PermissionRequest waiting = micRequest;
+        micRequest = null;
+        if (waiting == null) {
+            return;
+        }
+        if (ok) {
+            waiting.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+        } else {
+            waiting.deny();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (fileCallback != null) {
+            fileCallback.onReceiveValue(null);
+            fileCallback = null;
+        }
+        super.onDestroy();
     }
 
     private static byte[] readFile(File f) throws Exception {
