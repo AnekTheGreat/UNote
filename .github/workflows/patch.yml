@@ -60,6 +60,9 @@ jobs:
           set -euo pipefail
           if [ "$PENDING" = yes ]; then
             python3 "$P"
+            # A patch writes the sources; the page is joined from them by dev/build.py. Without this
+            # line index.html stays at the version before the patch and the check below rightly fails.
+            python3 dev/build.py
             echo "built=yes" >> "$GITHUB_OUTPUT"
           else
             echo "built=no" >> "$GITHUB_OUTPUT"
