@@ -39,7 +39,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: The upload keystore, when the repository has one
+      - name: The upload keystore
         if: env.HAS_KEYSTORE == 'true'
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -51,7 +51,7 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 -d > android/upload.jks
           {
             echo 'storeFile=../upload.jks'
-            echo 'storeType=jks'
+            echo 'storeType=PKCS12'
             echo "storePassword=$STORE_PASSWORD"
             echo "keyAlias=$KEY_ALIAS"
             echo "keyPassword=$KEY_PASSWORD"
@@ -59,21 +59,32 @@ jobs:
           chmod 600 android/keystore.properties android/upload.jks
           echo 'release signing: on'
 
+      # Every build must carry the SAME signing key. Android refuses to install an update signed
+      # by a different key, so a throwaway debug key makes the download useless: the install is
+      # rejected and the old app stays. When that happened here, the app looked like it could not
+      # be updated at all. So a keyless build now fails loudly instead of being published.
       - name: Build
         run: |
           set -euo pipefail
-          if [ -f android/keystore.properties ]; then
-            gradle -p android --no-daemon assembleRelease
-            out=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
-          else
-            echo 'release signing: off, so this is the debug build'
-            gradle -p android --no-daemon assembleDebug
-            out=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -1)
+          if [ ! -f android/keystore.properties ]; then
+            echo 'No release keystore is configured (ANDROID_KEYSTORE_BASE64 is empty).'
+            echo 'Refusing to publish a debug-signed APK: Android will not install it over the app already on the phone.'
+            exit 1
           fi
+          gradle -p android --no-daemon assembleRelease
+          out=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
           test -n "$out"
           cp "$out" UNote.apk
           ls -l UNote.apk
           sha256sum UNote.apk > UNote.apk.sha256
+
+      - name: Which key signed it
+        run: |
+          set -euo pipefail
+          apksigner=$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -name apksigner 2>/dev/null | sort | tail -1)
+          if [ -n "$apksigner" ]; then
+            "$apksigner" verify --print-certs UNote.apk | head -4 || true
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
