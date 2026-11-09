@@ -2,7 +2,7 @@
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.15';
+const VERSION = '1.0.16';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -93,7 +93,7 @@ const randSalt = () => toB64(crypto.getRandomValues(new Uint8Array(16)));
 /* ---------------- state ---------------- */
 const S = {
   notes: [],            // plain notes (vault:false)
-  vault: { on: false, key: null, salt: '', verifier: null, notes: [], plain: [], tries: 0, until: 0 },
+  vault: { on: false, key: null, salt: '', verifier: null, notes: [], plain: [], pending: {}, tries: 0, until: 0 },
   settings: { theme: 'dark', accent: '#7c5cff', size: 16, mode: 'split', autolock: 2, onboarded: false, sort: 'updated' },
   current: null,
   folder: '',
@@ -246,8 +246,17 @@ async function saveNote(note, opts) {
   if (!note) return;
   note.updated = nowMs();
   if (note.vault) {
-    if (!S.vault.key) return;
-    const box = await aesEnc(S.vault.key, JSON.stringify({ title: note.title, body: note.body, folder: note.folder }));
+    if (!S.vault.key) {
+      /* 1.0.16 - a save that cannot happen must not throw the words away. They wait in a holding
+         pen on this phone and go in the moment the PIN is back. */
+      (S.vault.pending = S.vault.pending || {})[note.id] = {
+        id: note.id, title: note.title || '', body: note.body || '', folder: note.folder || '',
+        created: note.created || note.updated, updated: note.updated, fav: !!note.fav,
+      };
+      kvSet('vaultpending', S.vault.pending).catch(() => {});
+      return;
+    }
+    const box = await aesEnc(S.vault.key, JSON.stringify({ title: note.title, body: note.body, folder: note.folder, fav: !!note.fav }));
     const rec = { id: note.id, vault: true, created: note.created, updated: note.updated, iv: box.iv, ct: box.ct };
     const idx = S.vault.notes.findIndex(r => r.id === note.id);
     if (idx >= 0) S.vault.notes[idx] = rec; else S.vault.notes.push(rec);

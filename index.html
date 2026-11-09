@@ -552,7 +552,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.15';
+const VERSION = '1.0.16';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -643,7 +643,7 @@ const randSalt = () => toB64(crypto.getRandomValues(new Uint8Array(16)));
 /* ---------------- state ---------------- */
 const S = {
   notes: [],            // plain notes (vault:false)
-  vault: { on: false, key: null, salt: '', verifier: null, notes: [], plain: [], tries: 0, until: 0 },
+  vault: { on: false, key: null, salt: '', verifier: null, notes: [], plain: [], pending: {}, tries: 0, until: 0 },
   settings: { theme: 'dark', accent: '#7c5cff', size: 16, mode: 'split', autolock: 2, onboarded: false, sort: 'updated' },
   current: null,
   folder: '',
@@ -796,8 +796,17 @@ async function saveNote(note, opts) {
   if (!note) return;
   note.updated = nowMs();
   if (note.vault) {
-    if (!S.vault.key) return;
-    const box = await aesEnc(S.vault.key, JSON.stringify({ title: note.title, body: note.body, folder: note.folder }));
+    if (!S.vault.key) {
+      /* 1.0.16 - a save that cannot happen must not throw the words away. They wait in a holding
+         pen on this phone and go in the moment the PIN is back. */
+      (S.vault.pending = S.vault.pending || {})[note.id] = {
+        id: note.id, title: note.title || '', body: note.body || '', folder: note.folder || '',
+        created: note.created || note.updated, updated: note.updated, fav: !!note.fav,
+      };
+      kvSet('vaultpending', S.vault.pending).catch(() => {});
+      return;
+    }
+    const box = await aesEnc(S.vault.key, JSON.stringify({ title: note.title, body: note.body, folder: note.folder, fav: !!note.fav }));
     const rec = { id: note.id, vault: true, created: note.created, updated: note.updated, iv: box.iv, ct: box.ct };
     const idx = S.vault.notes.findIndex(r => r.id === note.id);
     if (idx >= 0) S.vault.notes[idx] = rec; else S.vault.notes.push(rec);
@@ -856,7 +865,7 @@ function renderSide() {
   if (S.vault.on) {
     h += '<button class="navrow' + (vault ? ' on' : '') + '" data-nav="vault">' +
       '<svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>' +
-      'Vault<span class="n">' + (vault ? 'close' : S.vault.key ? 'open' : 'locked') + '</span></button>';
+      'Vault<span class="n">' + (vault ? 'Lock' : S.vault.key ? 'open' : 'locked') + '</span></button>';
   }
   h += '<button class="navrow' + (!vault && S.view === 'trash' ? ' on' : '') + '" data-nav="trash">' +
     '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>' +
@@ -893,9 +902,15 @@ function renderSide() {
   if (S.view === 'vault' && !S.vault.key) {
     h += '<div style="padding:8px 6px"><button class="listrow" data-act="unlock" style="margin:0">' +
       '<svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:1.7"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>' +
-      '<span class="grow"><span class="lr-t">Vault is locked</span><span class="lr-s" style="display:block">Tap to enter your PIN</span></span></button></div>';
+      '<span class="grow"><span class="lr-t">Vault is locked</span><span class="lr-s" style="display:block">' +
+      (S.vault.notes.length
+        ? S.vault.notes.length + (S.vault.notes.length === 1 ? ' note sealed here' : ' notes sealed here') + ' - tap to enter your PIN'
+        : 'Tap to enter your PIN') +
+      '</span></span></button></div>';
   } else if (!list.length) {
-    h += '<div class="emptyhint">' + (S.view === 'trash' ? 'Nothing in the trash.' : 'No notes here yet.') + '</div>';
+    h += '<div class="emptyhint">' + (S.view === 'trash' ? 'Nothing in the trash.'
+      : S.view === 'vault' ? 'The Vault is empty. Tap + to write the first note that only your PIN can open.'
+      : 'No notes here yet.') + '</div>';
   } else {
     list.forEach(n => {
       h += '<button class="noteitem' + (S.current && S.current.id === n.id ? ' on' : '') + '" data-note="' + n.id + '">' +
@@ -1382,7 +1397,21 @@ function askNewPin(done) {
 
 async function unlockDialog(after) {
   const meta = await vaultMeta();
-  if (!meta || !meta.on) { askNewPin(after); return; }
+  if (!meta || !meta.on) {
+    /* 1.0.16 - if sealed notes are already on this phone, a "new" Vault would bury them for good.
+       Say so instead of quietly taking a new PIN over the top of them. */
+    const sealed = (await dbAll('notes')).filter(r => r.vault).length;
+    if (sealed) {
+      dialog({
+        title: 'These notes are still sealed',
+        body: '<div class="hint" style="margin-top:0">This phone holds ' + sealed + ' sealed Vault note' + (sealed === 1 ? '' : 's') + ', but the record that checks the PIN is missing, so nothing here can open them.</div>' +
+          '<div class="hint">Setting a new PIN now would leave them sealed for good. If you have a backup file, import that first: a backup brings its own PIN back with it.</div>',
+        foot: '<div class="grow"></div><button class="btn" data-close="1">Leave them sealed</button>',
+      });
+      return;
+    }
+    askNewPin(after); return;
+  }
   const guard = (await kvGet('vaultguard')) || { tries: 0, until: 0 };
   const waitLeft = Math.max(0, (guard.until || 0) - nowMs());
   if (waitLeft > 0) {
@@ -1399,8 +1428,11 @@ async function unlockDialog(after) {
         S.vault.key = key; S.vault.salt = meta.salt; S.vault.verifier = meta.verifier;
         await kvSet('vaultguard', { tries: 0, until: 0 });
         await decryptVault();
+        const kept = await flushVaultPending();
         closeDialog();
-        toast('Vault open. It locks itself when you leave.');
+        toast(kept
+          ? 'Vault open. ' + kept + (kept === 1 ? ' note you had written while it was locked is saved now.' : ' notes you had written while it was locked are saved now.')
+          : 'Vault open. It locks itself when you leave.');
         if (after) after(); else { goVault(); }
       } catch (e) {
         const g = ((await kvGet('vaultguard')) || { tries: 0 });
@@ -1424,11 +1456,42 @@ async function decryptVault() {
   for (const r of vrecs) {
     try {
       const j = JSON.parse(await aesDec(S.vault.key, r.iv, r.ct));
-      out.push({ id: r.id, vault: true, title: j.title || '', body: j.body || '', folder: j.folder || '', fav: false, created: r.created, updated: r.updated, deleted: 0 });
+      out.push({ id: r.id, vault: true, title: j.title || '', body: j.body || '', folder: j.folder || '', fav: !!j.fav, created: r.created, updated: r.updated, deleted: 0 });
     } catch (e) { /* a record this key cannot read stays sealed */ }
   }
   S.vault.notes = vrecs;
   S.vault.plain = out.sort((a, b) => b.updated - a.updated);
+}
+
+/* 1.0.16 - anything written while the Vault was locked lands here once it opens again. Nothing is
+   ever written over a newer copy: the newest text wins, and a note that only exists in the holding
+   pen is created. */
+async function flushVaultPending() {
+  const pend = Object.assign({}, S.vault.pending || (await kvGet('vaultpending')) || {});
+  const ids = Object.keys(pend);
+  if (!ids.length) { S.vault.pending = {}; return 0; }
+  S.vault.pending = {};
+  await kvSet('vaultpending', null).catch(() => {});
+  let wrote = 0;
+  for (const id of ids) {
+    const p = pend[id] || {};
+    const here = S.vault.plain.find(n => n.id === id);
+    if (here) {
+      if ((p.updated || 0) < (here.updated || 0)) continue;
+      here.title = p.title || ''; here.body = p.body || ''; here.folder = p.folder || '';
+      await saveNote(here, { quiet: true });
+    } else {
+      const n = {
+        id: id, vault: true, title: p.title || '', body: p.body || '', folder: p.folder || '', fav: !!p.fav,
+        created: p.created || p.updated || nowMs(), updated: p.updated || nowMs(), deleted: 0,
+      };
+      S.vault.plain.unshift(n);
+      await saveNote(n, { quiet: true });
+    }
+    wrote++;
+  }
+  if (wrote) { renderSide(); renderDoc(); }
+  return wrote;
 }
 
 function goVault() {
@@ -1437,8 +1500,13 @@ function goVault() {
   renderSide();
 }
 
-function lockVault(quiet) {
+async function lockVault(quiet) {
   if (!S.vault.key) return;
+  /* 1.0.16 - the open note is written before the key goes, so locking can never be the reason a
+     sentence just typed is gone. */
+  if (S.current && S.current.vault) {
+    try { await saveNote(S.current, { quiet: true }); } catch (e) { /* the holding pen has it */ }
+  }
   S.vault.key = null;
   S.vault.plain = [];
   if (S.current && S.current.vault) { S.current = null; renderDoc(); }
@@ -1488,7 +1556,8 @@ async function wipeVault() {
   for (const r of recs) if (r.vault) await dbDel('notes', r.id);
   await kvSet('vault', null);
   await kvSet('vaultguard', { tries: 0, until: 0 });
-  S.vault = { on: false, key: null, salt: '', verifier: null, notes: [], plain: [], tries: 0, until: 0 };
+  await kvSet('vaultpending', null);
+  S.vault = { on: false, key: null, salt: '', verifier: null, notes: [], plain: [], pending: {}, tries: 0, until: 0 };
   if (S.view === 'vault') S.view = 'notes';
   renderSide(); renderDoc();
 }
@@ -1497,7 +1566,13 @@ function vaultActivity() {
   clearTimeout(vaultActivity._t);
   const mins = Number(S.settings.autolock || 0);
   if (!mins || !S.vault.key) return;
-  vaultActivity._t = setTimeout(() => { lockVault(); toast('Vault locked after ' + mins + ' min.'); }, mins * MIN);
+  vaultActivity._t = setTimeout(() => {
+    /* 1.0.16 - never shut the door on somebody who is still writing: the timer waits while a Vault
+       note is open. The Vault still locks the moment you leave it, or when you tap lock. */
+    if (S.current && S.current.vault) { vaultActivity(); return; }
+    lockVault();
+    toast('Vault locked after ' + mins + ' min.');
+  }, mins * MIN);
 }
 ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(ev => document.addEventListener(ev, vaultActivity, { passive: true }));
 document.addEventListener('visibilitychange', () => {
@@ -2185,7 +2260,9 @@ function noteMenu() {
 async function moveToVault(n) {
   if (!S.vault.key) return;
   const v = { id: n.id, vault: true, title: n.title, body: n.body, folder: n.folder, created: n.created, updated: nowMs(), deleted: 0 };
-  await dbPut('notes', { id: n.id, vault: true, created: v.created, updated: v.updated, iv: null, ct: null });
+  /* 1.0.16 - the sealed record is written once, with its words already in it. The old code wrote a
+     record with no ciphertext first, and a note interrupted in that moment could never be read
+     again. Now a failure leaves the plain note exactly where it was. */
   await saveNote(v);
   S.notes = S.notes.filter(x => x.id !== n.id);
   S.vault.plain.unshift(v);

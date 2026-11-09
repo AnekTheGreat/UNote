@@ -38,7 +38,7 @@ function renderSide() {
   if (S.vault.on) {
     h += '<button class="navrow' + (vault ? ' on' : '') + '" data-nav="vault">' +
       '<svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>' +
-      'Vault<span class="n">' + (vault ? 'close' : S.vault.key ? 'open' : 'locked') + '</span></button>';
+      'Vault<span class="n">' + (vault ? 'Lock' : S.vault.key ? 'open' : 'locked') + '</span></button>';
   }
   h += '<button class="navrow' + (!vault && S.view === 'trash' ? ' on' : '') + '" data-nav="trash">' +
     '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>' +
@@ -75,9 +75,15 @@ function renderSide() {
   if (S.view === 'vault' && !S.vault.key) {
     h += '<div style="padding:8px 6px"><button class="listrow" data-act="unlock" style="margin:0">' +
       '<svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:1.7"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>' +
-      '<span class="grow"><span class="lr-t">Vault is locked</span><span class="lr-s" style="display:block">Tap to enter your PIN</span></span></button></div>';
+      '<span class="grow"><span class="lr-t">Vault is locked</span><span class="lr-s" style="display:block">' +
+      (S.vault.notes.length
+        ? S.vault.notes.length + (S.vault.notes.length === 1 ? ' note sealed here' : ' notes sealed here') + ' - tap to enter your PIN'
+        : 'Tap to enter your PIN') +
+      '</span></span></button></div>';
   } else if (!list.length) {
-    h += '<div class="emptyhint">' + (S.view === 'trash' ? 'Nothing in the trash.' : 'No notes here yet.') + '</div>';
+    h += '<div class="emptyhint">' + (S.view === 'trash' ? 'Nothing in the trash.'
+      : S.view === 'vault' ? 'The Vault is empty. Tap + to write the first note that only your PIN can open.'
+      : 'No notes here yet.') + '</div>';
   } else {
     list.forEach(n => {
       h += '<button class="noteitem' + (S.current && S.current.id === n.id ? ' on' : '') + '" data-note="' + n.id + '">' +
