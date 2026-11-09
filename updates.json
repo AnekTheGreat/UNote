@@ -1,13 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.14",
-  "date": "2026-11-08",
+  "version": "1.0.15",
+  "date": "2026-11-09",
   "notes": [
-    "Installing a newer APK now takes effect straight away. The app keeps the page it downloaded last time in its own storage and was serving that instead of the page inside the new APK, so a fresh install could keep opening the old version and look like nothing had changed.",
-    "An out-of-date downloaded page is dropped automatically, and only a page newer than the app itself is ever served.",
-    "Settings now says whether this screen is the page that came inside the app or one fetched earlier, so a shadowed page is visible instead of mysterious."
+    "What's new no longer opens by itself on every launch. It opens once, and only for a version that is really newer than the last one this phone showed you.",
+    "Two everyday things used to bring it back: the app serving an older page than the one inside the APK, which made the version differ in both directions, and closing the app while the sheet was open, which counted as never having read it. The mark is written the moment the sheet appears, and it never moves backwards.",
+    "The welcome screen is remembered the same way, so it cannot return for the same reason.",
+    "The notes are still one tap away: What's new in the footer, and Patch notes in Settings."
   ],
   "history": [
+    {
+      "version": "1.0.15",
+      "date": "2026-11-09",
+      "title": "What's new stops coming back",
+      "notes": [
+        "What's new no longer opens by itself on every launch. It opens once, and only for a version that is really newer than the last one this phone showed you.",
+        "Two everyday things used to bring it back: the app serving an older page than the one inside the APK, which made the version differ in both directions, and closing the app while the sheet was open, which counted as never having read it. The mark is written the moment the sheet appears, and it never moves backwards.",
+        "The welcome screen is remembered the same way, so it cannot return for the same reason.",
+        "The notes are still one tap away: What's new in the footer, and Patch notes in Settings."
+      ]
+    },
     {
       "version": "1.0.14",
       "date": "2026-11-08",

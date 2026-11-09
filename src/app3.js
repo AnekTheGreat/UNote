@@ -74,6 +74,10 @@ async function setupVaultPin(pin, ui, onDone) {
 }
 
 async function onboard() {
+  /* 1.0.15 - the welcome counts as met the moment it is on the screen, not when its button is
+     pressed, so a phone put down on the welcome does not open on it again tomorrow. */
+  S.settings.onboarded = true;
+  kvSet('settings', S.settings).catch(() => {});
   const d = dialog({
     body: '<div style="text-align:center;padding:6px 0 2px">' +
       '<div style="font-size:30px;font-weight:700;letter-spacing:-1px">U<b style="color:var(--accent)">Note</b></div>' +
@@ -1011,8 +1015,18 @@ async function boot() {
     const b = e.target.closest('#btnWhats, [data-whatsnew]');
     if (b) { e.preventDefault(); e.stopPropagation(); patchNotesDialog(false); }
   });
-  if (S.settings.seen && S.settings.seen !== VERSION) setTimeout(() => patchNotesDialog(true), 1100);
-  if (S.settings.seen !== VERSION) { S.settings.seen = VERSION; kvSet('settings', S.settings).catch(() => {}); }
+  /* 1.0.15 - once per version, and only for a version that is really newer. The old test asked
+     whenever the page's version merely differed, so a screen that went back to an earlier copy
+     asked again, and closing the app on the sheet without tapping Done asked again on the next
+     launch. The mark is written as the sheet appears and it never moves backwards, so a copy that
+     is already on this phone cannot bring the sheet back by itself. */
+  const seenTop = (await kvGet('seenTop')) || S.settings.seen || '';
+  if (!seenTop) {
+    await kvSet('seenTop', VERSION).catch(() => {});
+  } else if (cmpVer(VERSION, seenTop) > 0) {
+    await kvSet('seenTop', VERSION).catch(() => {});
+    setTimeout(() => patchNotesDialog(true), 1100);
+  }
   watchForUpdates();
 
   // rail
