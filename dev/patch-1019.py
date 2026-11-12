@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """UNote 1.0.19 - the build a store will take.
 
-Four things stood between the bundle and Play:
+What stood between the bundle and Play:
 
   * the APK called itself 1.0.16 while the page had moved on twice, because the version was
-    typed into gradle and the page's version lives in updates.json. It is read from there now,
+    typed into gradle while the page's version lives in updates.json. It is read from there now,
     and the version code is computed from it, three digits a part, so it can only go up.
   * targetSdk 34. From 31 August 2026 a new listing has to target 36, which means AGP 8.12.3
-    and Gradle 8.13 rather than 8.5.2 and 8.7.
-  * Android 15 forces apps targeting 35 or later to draw behind the status and navigation bars.
-    This page was written to sit between them, so the bars' heights go back on as padding.
-  * nothing else: signing, minSdk, the package name and the launcher are already what Play asks.
+    rather than 8.5.2. (The Gradle version in the build workflow is raised in its own commit: a
+    workflow run cannot push a change to a workflow file.)
+  * Android 15 forces apps targeting 35 or later to draw behind the status and navigation bars,
+    and this page was written to sit between them, so the bars' heights go back on as padding.
 
     python3 dev/patch-1019.py          # apply
     python3 dev/patch-1019.py --check  # say whether the tree already carries 1.0.19
@@ -56,7 +56,6 @@ def rep(p, old, new, what):
 
 GRADLE = 'android/app/build.gradle'
 MAIN = 'android/app/src/main/java/app/unote/MainActivity.java'
-WF = '.github/workflows/apk.yml'
 
 
 def main():
@@ -91,7 +90,6 @@ def main():
     # 2. The build tools that can target 36.
     rep('android/build.gradle', "id 'com.android.application' version '8.5.2' apply false",
         "id 'com.android.application' version '8.12.3' apply false", 'the Android Gradle Plugin')
-    rep(WF, "gradle-version: '8.7'", "gradle-version: '8.13'", 'the Gradle version')
 
     # 3. The bars, back where they were.
     rep(MAIN, "import android.os.Bundle;", "import android.os.Build;\nimport android.os.Bundle;", 'the Build import')
