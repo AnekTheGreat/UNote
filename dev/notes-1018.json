@@ -1,0 +1,5 @@
+[
+  "UNote has a privacy policy. It lives at anekthegreat.github.io/UNote/privacy.html and is linked from Settings, under About, so what the app keeps and what it does with it is one tap from inside the app rather than a page you have to be told about.",
+  "It says what is true of this app in plain words: your notes, drawings, pictures and recordings are kept in the app's own storage on the phone; a Vault note is encrypted on the phone with a key made from your PIN, with nothing of the PIN stored; backups and transfer codes are made only when you ask and go only where you send them.",
+  "It also names the one thing that leaves the phone - the check for a newer copy of the app's own interface, from this project's GitHub Pages site - and what GitHub sees when that happens. There is no account, no analytics, no advertising and no third-party library in the app, and the page says so."
+]
