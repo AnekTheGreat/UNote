@@ -12,8 +12,6 @@
   <path fill="#FFFFFF" d="M46,44h20a2,2 0 0 1 0,4h-20a2,2 0 0 1 0,-4z"/>
   <path fill="#FFFFFF" fill-opacity=".92" d="M46,55h20a2,2 0 0 1 0,4h-20a2,2 0 0 1 0,-4z"/>
   <path fill="#FFFFFF" fill-opacity=".72" d="M46,66h12a2,2 0 0 1 0,4h-12a2,2 0 0 1 0,-4z"/>
-  <path fill="#FFFFFF" d="M63,74a4,4 0 1 1 8,0a4,4 0 1 1 -8,0z"/>
-  <path fill="#FFFFFF" d="M70.5,74a4,4 0 1 1 8,0a4,4 0 1 1 -8,0z"/>
-  <path fill="#1B1633" fill-opacity=".6" d="M70.2,69.4h0.9v9.2h-0.9z"/>
+  <path fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" d="M62.9,69.6v3.2a3.6,3.6 0 0 0 7.2,0v-3.2"/>
   </g>
 </svg>
