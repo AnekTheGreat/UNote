@@ -1,8 +1,12 @@
 {
   "app": "UNote",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "date": "2026-11-12",
   "notes": [
+    "The top of the page always keeps a status bar's worth of room above it now, whether or not the phone tells the page how tall that bar is. A WebView that reports nothing used to leave the Write/Read/Draw switch and the buttons beside it drawn on top of the clock; now a phone always starts 36 pixels down, and a real measurement from the phone wins whenever it is bigger. That is a guaranteed gap rather than a hope.",
+    "There is a Back button in the top bar, on the left, and it appears whenever there is somewhere to go back to: the search or the command palette, a sheet, the note list drawer, a tag or folder filter, the Vault, the Trash. On a phone it takes the menu button's place while it is showing, so nothing is crowded.",
+    "The search and the command palette have a back arrow of their own in their header, which is the way out that was missing: before, the only exit was the phone's back key, and that left the app entirely.",
+    "The phone's back key does the same as the arrow now: it closes the sheet, the search, the graph or the drawer in front of it, then lets go of a filter, and only closes the app when there is nothing left to close.",
     "The page now lays itself out for the shape of the screen it is on, not just its width. A folded foldable and a phone keep the drawer and the row of buttons at the bottom; an unfolded foldable or a small tablet gets the rail and the note list as a column of their own, with the note beside them instead of behind a button; a tablet or a desktop window also gets the links pane back, and the writing column stops widening and sits in the middle, so a line of text stays a line of text instead of running the whole way across.",
     "A flip's cover screen, and any phone held sideways, get a short-screen layout: the word count bar at the bottom gives way first, the title and the margins shrink, the top bar gets shorter and the row of buttons at the bottom drops to 50 pixels, so the note itself keeps the room.",
     "On the narrowest covers one row of controls has to do: the search box gives way, the buttons tighten, and the dialogs and the PIN pad lose their side margins rather than their buttons.",
@@ -16,6 +20,17 @@
     "The top of the page keeps clear of the status bar and the notch, and the row of buttons at the bottom keeps clear of the navigation bar, in the app and in the copy installed from the browser. The bar along the top is taller with room to tap, the sheet's buttons wrap instead of crowding, and a dialog can never grow past the screen it is on."
   ],
   "history": [
+    {
+      "version": "1.0.23",
+      "date": "2026-11-12",
+      "title": "A guaranteed gap at the top, and a way back out",
+      "notes": [
+        "The top of the page always keeps a status bar's worth of room above it now, whether or not the phone tells the page how tall that bar is. A WebView that reports nothing used to leave the Write/Read/Draw switch and the buttons beside it drawn on top of the clock; now a phone always starts 36 pixels down, and a real measurement from the phone wins whenever it is bigger. That is a guaranteed gap rather than a hope.",
+        "There is a Back button in the top bar, on the left, and it appears whenever there is somewhere to go back to: the search or the command palette, a sheet, the note list drawer, a tag or folder filter, the Vault, the Trash. On a phone it takes the menu button's place while it is showing, so nothing is crowded.",
+        "The search and the command palette have a back arrow of their own in their header, which is the way out that was missing: before, the only exit was the phone's back key, and that left the app entirely.",
+        "The phone's back key does the same as the arrow now: it closes the sheet, the search, the graph or the drawer in front of it, then lets go of a filter, and only closes the app when there is nothing left to close."
+      ]
+    },
     {
       "version": "1.0.22",
       "date": "2026-11-12",

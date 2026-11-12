@@ -1,5 +1,5 @@
 /* UNote service worker - the app opens offline, and a new version lands by itself. */
-const CACHE = 'unote-v1.0.22';
+const CACHE = 'unote-v1.0.23';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-maskable.svg', './updates.json'];
 
 self.addEventListener('install', e => {

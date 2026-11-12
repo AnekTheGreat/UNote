@@ -275,6 +275,10 @@ body[data-mode="draw"] #inkwrap{display:flex}
 
 .palinput{width:100%;padding:14px 18px;border:0;border-bottom:1px solid var(--line);background:none;outline:none;font-size:15px}
 .palinput::placeholder{color:var(--dim2)}
+/* 1.0.23 - a search is easy to get into and, until now, hard to get out of: the palette had no
+   header and the phone's back key left the app. It has a back arrow of its own. */
+.palhead{display:flex;align-items:center;gap:2px;padding:5px 8px 5px 6px;border-bottom:1px solid var(--line)}
+.palhead .palinput{border-bottom:0;padding:10px 6px;font-size:15px}
 .pallist{overflow:auto;padding:8px;flex:1;min-height:0}
 .palitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;width:100%;text-align:left;color:var(--dim)}
 .palitem:hover,.palitem.on{background:var(--accent-soft);color:var(--ink)}
@@ -472,6 +476,17 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
     #menuBtn{display:none}            /* the sidebar is a column, not a drawer */
     #sideClose{display:none}
   }
+  /* 1.0.23 - a status bar's worth of room above the page, always. A WebView can be told the real
+     heights by the app, and a browser supplies env(); a copy running under an older app reports
+     nothing at all, which is what left the top row under the clock. The floor is the guarantee,
+     and the larger of the floor and the real value wins. */
+  @media (max-width:900px){
+    :root{--safe-t:max(env(safe-area-inset-top,0px), 36px)}
+  }
+  /* with a Back button on screen, the menu button steps aside so the two never crowd a phone */
+  @media (max-width:600px){
+    #top.has-back #menuBtn{display:none}
+  }
   /* small tablet, or an unfolded foldable held in portrait: rail and sidebar, no third pane */
   @media (min-width:601px) and (max-width:899px){
     #app{grid-template-columns:52px 226px minmax(0,1fr)}
@@ -579,6 +594,9 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 
   <main id="main">
     <header id="top">
+      <button class="iconbtn" id="btnBack" hidden title="Back" aria-label="Back">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>

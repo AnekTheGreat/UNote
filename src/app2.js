@@ -94,6 +94,43 @@ function renderSide() {
     });
   }
   body.innerHTML = h;
+  updateBack();
+}
+
+/* ---------------- going back ---------------- */
+/* 1.0.23 - one idea of "back", shared by the arrow in the top bar and by the phone's own back
+   key: close what is on top first (a sheet, the search, the graph, the drawer), then undo a
+   filter or leave the Vault, and only then is there nowhere left to go. */
+function backTarget() {
+  const gw = $('#graphwrap');
+  if (gw && !gw.hidden) return 'graph';
+  const d = $('#dlg');
+  if (d && !d.hidden) return 'dialog';
+  const side = $('#side');
+  if (side && side.classList.contains('open')) return 'side';
+  if (S.folder || S.tag) return 'filter';
+  if (S.view && S.view !== 'notes') return 'view';
+  return '';
+}
+function updateBack() {
+  const b = $('#btnBack'), top = $('#top');
+  const show = !!backTarget();
+  if (b) b.hidden = !show;
+  if (top) top.classList.toggle('has-back', show);
+}
+function goBack() {
+  const t = backTarget();
+  if (!t) return false;
+  if (t === 'graph') closeGraph();
+  else if (t === 'dialog') closeDialog();
+  else if (t === 'side') closeSide();
+  else {
+    if (S.vault.key) lockVault(true);
+    S.view = 'notes'; S.folder = ''; S.tag = '';
+    renderSide();
+  }
+  updateBack();
+  return true;
 }
 
 /* ---------------- rendering: document ---------------- */
@@ -267,6 +304,7 @@ function openGraph() {
   G.scale = 1; G.tx = 0; G.ty = 0;
   sizeGraph();
   if (!G.raf) { G.last = performance.now(); G.raf = requestAnimationFrame(graphTick); }
+  updateBack();
 }
 function sizeGraph() {
   const c = G.canvas; if (!c) return;
@@ -277,6 +315,7 @@ function sizeGraph() {
 function closeGraph() {
   $('#graphwrap').hidden = true;
   cancelAnimationFrame(G.raf); G.raf = 0;
+  updateBack();
 }
 function graphTick(t) {
   const dt = Math.min(32, t - G.last) / 16.666; G.last = t;
@@ -367,11 +406,15 @@ function palette(mode) {
   palSel = 0;
   const d = dialog({
     cls: 'wide',
-    body: '<input class="palinput" id="palQ" placeholder="' +
-      (palMode === 'search' ? 'Search every note…' : 'Jump to a note, or type a command…') + '" autocomplete="off">' +
+    body: '<div class="palhead">' +
+      '<button class="iconbtn" id="palBack" aria-label="Back" title="Back">' +
+        '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+      '<input class="palinput" id="palQ" placeholder="' +
+      (palMode === 'search' ? 'Search every note…' : 'Jump to a note, or type a command…') + '" autocomplete="off"></div>' +
       '<div class="pallist" id="palList"></div>',
     foot: '<span class="hint" style="margin:0">↑ ↓ to move · Enter to open · Esc to close</span>',
   });
+  $('#palBack', d).addEventListener('click', closeDialog);
   const q = $('#palQ', d);
   q.addEventListener('input', () => { palSel = 0; drawPalette(); });
   q.addEventListener('keydown', e => {

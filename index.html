@@ -275,6 +275,10 @@ body[data-mode="draw"] #inkwrap{display:flex}
 
 .palinput{width:100%;padding:14px 18px;border:0;border-bottom:1px solid var(--line);background:none;outline:none;font-size:15px}
 .palinput::placeholder{color:var(--dim2)}
+/* 1.0.23 - a search is easy to get into and, until now, hard to get out of: the palette had no
+   header and the phone's back key left the app. It has a back arrow of its own. */
+.palhead{display:flex;align-items:center;gap:2px;padding:5px 8px 5px 6px;border-bottom:1px solid var(--line)}
+.palhead .palinput{border-bottom:0;padding:10px 6px;font-size:15px}
 .pallist{overflow:auto;padding:8px;flex:1;min-height:0}
 .palitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;width:100%;text-align:left;color:var(--dim)}
 .palitem:hover,.palitem.on{background:var(--accent-soft);color:var(--ink)}
@@ -472,6 +476,17 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
     #menuBtn{display:none}            /* the sidebar is a column, not a drawer */
     #sideClose{display:none}
   }
+  /* 1.0.23 - a status bar's worth of room above the page, always. A WebView can be told the real
+     heights by the app, and a browser supplies env(); a copy running under an older app reports
+     nothing at all, which is what left the top row under the clock. The floor is the guarantee,
+     and the larger of the floor and the real value wins. */
+  @media (max-width:900px){
+    :root{--safe-t:max(env(safe-area-inset-top,0px), 36px)}
+  }
+  /* with a Back button on screen, the menu button steps aside so the two never crowd a phone */
+  @media (max-width:600px){
+    #top.has-back #menuBtn{display:none}
+  }
   /* small tablet, or an unfolded foldable held in portrait: rail and sidebar, no third pane */
   @media (min-width:601px) and (max-width:899px){
     #app{grid-template-columns:52px 226px minmax(0,1fr)}
@@ -579,6 +594,9 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 
   <main id="main">
     <header id="top">
+      <button class="iconbtn" id="btnBack" hidden title="Back" aria-label="Back">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
@@ -674,7 +692,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.22';
+const VERSION = '1.0.23';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1048,6 +1066,43 @@ function renderSide() {
     });
   }
   body.innerHTML = h;
+  updateBack();
+}
+
+/* ---------------- going back ---------------- */
+/* 1.0.23 - one idea of "back", shared by the arrow in the top bar and by the phone's own back
+   key: close what is on top first (a sheet, the search, the graph, the drawer), then undo a
+   filter or leave the Vault, and only then is there nowhere left to go. */
+function backTarget() {
+  const gw = $('#graphwrap');
+  if (gw && !gw.hidden) return 'graph';
+  const d = $('#dlg');
+  if (d && !d.hidden) return 'dialog';
+  const side = $('#side');
+  if (side && side.classList.contains('open')) return 'side';
+  if (S.folder || S.tag) return 'filter';
+  if (S.view && S.view !== 'notes') return 'view';
+  return '';
+}
+function updateBack() {
+  const b = $('#btnBack'), top = $('#top');
+  const show = !!backTarget();
+  if (b) b.hidden = !show;
+  if (top) top.classList.toggle('has-back', show);
+}
+function goBack() {
+  const t = backTarget();
+  if (!t) return false;
+  if (t === 'graph') closeGraph();
+  else if (t === 'dialog') closeDialog();
+  else if (t === 'side') closeSide();
+  else {
+    if (S.vault.key) lockVault(true);
+    S.view = 'notes'; S.folder = ''; S.tag = '';
+    renderSide();
+  }
+  updateBack();
+  return true;
 }
 
 /* ---------------- rendering: document ---------------- */
@@ -1221,6 +1276,7 @@ function openGraph() {
   G.scale = 1; G.tx = 0; G.ty = 0;
   sizeGraph();
   if (!G.raf) { G.last = performance.now(); G.raf = requestAnimationFrame(graphTick); }
+  updateBack();
 }
 function sizeGraph() {
   const c = G.canvas; if (!c) return;
@@ -1231,6 +1287,7 @@ function sizeGraph() {
 function closeGraph() {
   $('#graphwrap').hidden = true;
   cancelAnimationFrame(G.raf); G.raf = 0;
+  updateBack();
 }
 function graphTick(t) {
   const dt = Math.min(32, t - G.last) / 16.666; G.last = t;
@@ -1321,11 +1378,15 @@ function palette(mode) {
   palSel = 0;
   const d = dialog({
     cls: 'wide',
-    body: '<input class="palinput" id="palQ" placeholder="' +
-      (palMode === 'search' ? 'Search every note…' : 'Jump to a note, or type a command…') + '" autocomplete="off">' +
+    body: '<div class="palhead">' +
+      '<button class="iconbtn" id="palBack" aria-label="Back" title="Back">' +
+        '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+      '<input class="palinput" id="palQ" placeholder="' +
+      (palMode === 'search' ? 'Search every note…' : 'Jump to a note, or type a command…') + '" autocomplete="off"></div>' +
       '<div class="pallist" id="palList"></div>',
     foot: '<span class="hint" style="margin:0">↑ ↓ to move · Enter to open · Esc to close</span>',
   });
+  $('#palBack', d).addEventListener('click', closeDialog);
   const q = $('#palQ', d);
   q.addEventListener('input', () => { palSel = 0; drawPalette(); });
   q.addEventListener('keydown', e => {
@@ -1390,6 +1451,7 @@ function dialog(o) {
   d.hidden = false;
   dlgOnClose = o.onClose || null;
   $$('[data-close]', d).forEach(b => b.addEventListener('click', closeDialog));
+  updateBack();
   return d;
 }
 function closeDialog() {
@@ -1398,6 +1460,7 @@ function closeDialog() {
   $('#dlg').innerHTML = '';
   importAfter = null;            // an import sheet that was closed was not an import
   if (dlgOnClose) { const f = dlgOnClose; dlgOnClose = null; f(); }
+  updateBack();
 }
 
 /* ---------------- PIN pad ---------------- */
@@ -2511,7 +2574,25 @@ function seedWelcome() {
   saveNote(S.notes[0], { quiet: true });
 }
 
-function closeSide() { $('#side').classList.remove('open'); }
+function closeSide() { $('#side').classList.remove('open'); updateBack(); }
+
+/* 1.0.23 - the room above the page. The app hands over the real heights of the phone's bars in
+   CSS pixels; a browser supplies env(); a copy running under an older app gets nothing at all,
+   which is what left the top row under the clock. So a phone always keeps at least a status
+   bar's worth of space above it, and the real height wins whenever it is bigger. */
+function applySafeInsets() {
+  const nf = nativeFiles();
+  if (!nf || typeof nf.safeTop !== 'function') return;    // a browser keeps its own env() values
+  const num = fn => { try { const v = fn(); return (typeof v === 'number' && v > 0) ? v : 0; } catch (e) { return 0; } };
+  const floor = window.innerWidth > 900 ? 0 : 36;         // a tablet or desktop needs no floor
+  const real = num(nf.safeTop);                            // a real measurement always wins
+  const d = document.documentElement.style;
+  d.setProperty('--safe-t', (real > 0 ? real : floor) + 'px');
+  d.setProperty('--safe-b', num(nf.safeBottom) + 'px');
+  d.setProperty('--safe-l', num(nf.safeLeft) + 'px');
+  d.setProperty('--safe-r', num(nf.safeRight) + 'px');
+}
+if (typeof window !== 'undefined') window.UNoteInsets = applySafeInsets;   // the app says when
 
 async function boot() {
   await openDB();
@@ -2520,21 +2601,8 @@ async function boot() {
   const meta = await vaultMeta();
   if (meta && meta.on) { S.vault.on = true; S.vault.salt = meta.salt; S.vault.verifier = meta.verifier; }
 
-  /* 1.0.21 - the page keeps clear of the phone's own bars. A browser hands their heights over as
-     env(safe-area-inset-*); an Android WebView reports nothing at all, which is why the top of the
-     screen ended up under the clock in the app. The app hands over the same heights, in the same
-     unit, so both copies lay themselves out the same way on every phone. */
-  (function () {
-    const nf = nativeFiles();
-    if (!nf || typeof nf.safeTop !== 'function') return;
-    const put = (name, v) => {
-      if (typeof v === 'number' && v >= 0) document.documentElement.style.setProperty(name, v + 'px');
-    };
-    try { put('--safe-t', nf.safeTop()); } catch (e) {}
-    try { put('--safe-b', nf.safeBottom()); } catch (e) {}
-    try { put('--safe-l', nf.safeLeft()); } catch (e) {}
-    try { put('--safe-r', nf.safeRight()); } catch (e) {}
-  })();
+  applySafeInsets();
+  window.addEventListener('resize', applySafeInsets);
 
   document.documentElement.dataset.theme = S.settings.theme || 'dark';
   setAccent(S.settings.accent || '#7c5cff');
@@ -2590,8 +2658,14 @@ async function boot() {
     if (go === 'vault') goVault();
     if (go === 'settings') settingsDialog();
   }));
-  $('#menuBtn').addEventListener('click', () => $('#side').classList.toggle('open'));
+  $('#menuBtn').addEventListener('click', () => { $('#side').classList.toggle('open'); updateBack(); });
   $('#sideClose').addEventListener('click', closeSide);
+
+  /* 1.0.23 - the back arrow in the top bar, and the same thing for the phone's own back key
+     (MainActivity asks window.UNoteBack before it closes the app). */
+  $('#btnBack').addEventListener('click', goBack);
+  window.UNoteBack = goBack;
+  updateBack();
 
   // sidebar delegation
   $('#sideBody').addEventListener('click', e => {

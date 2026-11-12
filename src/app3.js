@@ -13,6 +13,7 @@ function dialog(o) {
   d.hidden = false;
   dlgOnClose = o.onClose || null;
   $$('[data-close]', d).forEach(b => b.addEventListener('click', closeDialog));
+  updateBack();
   return d;
 }
 function closeDialog() {
@@ -21,6 +22,7 @@ function closeDialog() {
   $('#dlg').innerHTML = '';
   importAfter = null;            // an import sheet that was closed was not an import
   if (dlgOnClose) { const f = dlgOnClose; dlgOnClose = null; f(); }
+  updateBack();
 }
 
 /* ---------------- PIN pad ---------------- */
@@ -1134,7 +1136,25 @@ function seedWelcome() {
   saveNote(S.notes[0], { quiet: true });
 }
 
-function closeSide() { $('#side').classList.remove('open'); }
+function closeSide() { $('#side').classList.remove('open'); updateBack(); }
+
+/* 1.0.23 - the room above the page. The app hands over the real heights of the phone's bars in
+   CSS pixels; a browser supplies env(); a copy running under an older app gets nothing at all,
+   which is what left the top row under the clock. So a phone always keeps at least a status
+   bar's worth of space above it, and the real height wins whenever it is bigger. */
+function applySafeInsets() {
+  const nf = nativeFiles();
+  if (!nf || typeof nf.safeTop !== 'function') return;    // a browser keeps its own env() values
+  const num = fn => { try { const v = fn(); return (typeof v === 'number' && v > 0) ? v : 0; } catch (e) { return 0; } };
+  const floor = window.innerWidth > 900 ? 0 : 36;         // a tablet or desktop needs no floor
+  const real = num(nf.safeTop);                            // a real measurement always wins
+  const d = document.documentElement.style;
+  d.setProperty('--safe-t', (real > 0 ? real : floor) + 'px');
+  d.setProperty('--safe-b', num(nf.safeBottom) + 'px');
+  d.setProperty('--safe-l', num(nf.safeLeft) + 'px');
+  d.setProperty('--safe-r', num(nf.safeRight) + 'px');
+}
+if (typeof window !== 'undefined') window.UNoteInsets = applySafeInsets;   // the app says when
 
 async function boot() {
   await openDB();
@@ -1143,21 +1163,8 @@ async function boot() {
   const meta = await vaultMeta();
   if (meta && meta.on) { S.vault.on = true; S.vault.salt = meta.salt; S.vault.verifier = meta.verifier; }
 
-  /* 1.0.21 - the page keeps clear of the phone's own bars. A browser hands their heights over as
-     env(safe-area-inset-*); an Android WebView reports nothing at all, which is why the top of the
-     screen ended up under the clock in the app. The app hands over the same heights, in the same
-     unit, so both copies lay themselves out the same way on every phone. */
-  (function () {
-    const nf = nativeFiles();
-    if (!nf || typeof nf.safeTop !== 'function') return;
-    const put = (name, v) => {
-      if (typeof v === 'number' && v >= 0) document.documentElement.style.setProperty(name, v + 'px');
-    };
-    try { put('--safe-t', nf.safeTop()); } catch (e) {}
-    try { put('--safe-b', nf.safeBottom()); } catch (e) {}
-    try { put('--safe-l', nf.safeLeft()); } catch (e) {}
-    try { put('--safe-r', nf.safeRight()); } catch (e) {}
-  })();
+  applySafeInsets();
+  window.addEventListener('resize', applySafeInsets);
 
   document.documentElement.dataset.theme = S.settings.theme || 'dark';
   setAccent(S.settings.accent || '#7c5cff');
@@ -1213,8 +1220,14 @@ async function boot() {
     if (go === 'vault') goVault();
     if (go === 'settings') settingsDialog();
   }));
-  $('#menuBtn').addEventListener('click', () => $('#side').classList.toggle('open'));
+  $('#menuBtn').addEventListener('click', () => { $('#side').classList.toggle('open'); updateBack(); });
   $('#sideClose').addEventListener('click', closeSide);
+
+  /* 1.0.23 - the back arrow in the top bar, and the same thing for the phone's own back key
+     (MainActivity asks window.UNoteBack before it closes the app). */
+  $('#btnBack').addEventListener('click', goBack);
+  window.UNoteBack = goBack;
+  updateBack();
 
   // sidebar delegation
   $('#sideBody').addEventListener('click', e => {

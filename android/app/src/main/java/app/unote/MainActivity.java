@@ -238,7 +238,10 @@ public class MainActivity extends Activity {
                 + "d.style.setProperty('--safe-t','" + insetTop + "px');"
                 + "d.style.setProperty('--safe-b','" + insetBottom + "px');"
                 + "d.style.setProperty('--safe-l','" + insetLeft + "px');"
-                + "d.style.setProperty('--safe-r','" + insetRight + "px');})()", null);
+                + "d.style.setProperty('--safe-r','" + insetRight + "px');"
+                // The page may want to add a floor of its own to those numbers; if it has a hook
+                // for that, it runs last so its values win.
+                + "if(window.UNoteInsets)window.UNoteInsets();})()", null);
     }
 
     /** The fetched page, if there is one that still looks like UNote - and only if it is newer than
@@ -641,12 +644,32 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** The phone's back key belongs to whatever is on screen before it belongs to the app: a
+     *  sheet, the search, the graph, the drawer, a filter. Only when the page says there is
+     *  nothing left to close does the app itself go. */
     @Override
     public void onBackPressed() {
-        if (web != null && web.canGoBack()) {
-            web.goBack();
-        } else {
-            super.onBackPressed();
+        if (web == null) {
+            closeApp();
+            return;
         }
+        if (web.canGoBack()) {
+            web.goBack();
+            return;
+        }
+        web.evaluateJavascript(
+                "(function(){try{return !!(window.UNoteBack && window.UNoteBack());}catch(e){return false;}})()",
+                new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String value) {
+                        if (!"true".equals(value)) {
+                            closeApp();
+                        }
+                    }
+                });
+    }
+
+    private void closeApp() {
+        super.onBackPressed();
     }
 }
