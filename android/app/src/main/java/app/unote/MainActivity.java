@@ -62,6 +62,8 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCallback;
     private PermissionRequest micRequest;
     private Insets lastBars;
+    // The phone's own margins, in CSS pixels, handed to the page (see tellPageInsets).
+    private int insetTop, insetBottom, insetLeft, insetRight;
 
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -189,20 +191,21 @@ public class MainActivity extends Activity {
 
         setContentView(web);
 
-        // Android 15 draws every app targeting 35 or later behind the status bar and the row of
-        // navigation buttons, and this page was written to sit between them. Where the phone
-        // insists, the heights of those bars go back on as padding - the layout every earlier
-        // version had - and the keyboard's height is included, so the bottom of the page still
-        // rises above it while it is open.
+        /* Android 15 and later draw the app behind the status bar, the notch and the row of
+           navigation buttons. A WebView reports no CSS env(safe-area-inset-*) values of its own,
+           and padding the WebView does not move the page's fixed bars - which is why the first
+           line of the screen ended up under the clock. So the heights of those bars are handed
+           to the page as CSS variables, the same numbers a browser would give it, and the page
+           lays itself out with them. They are sent again whenever they change - a rotation, a
+           cutout, the keyboard - and again when the page has finished loading. */
+        /* Only from Android 15 is the window really drawn behind those bars. Below that the phone
+           lays the app out between them already, and the insets describe bars the page is not
+           under, so applying them there would leave a second empty strip. */
         if (Build.VERSION.SDK_INT >= 35) {
-            final int padL = web.getPaddingLeft(), padT = web.getPaddingTop();
-            final int padR = web.getPaddingRight(), padB = web.getPaddingBottom();
             ViewCompat.setOnApplyWindowInsetsListener(web, (v, insets) -> {
-                Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                lastBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
                         | WindowInsetsCompat.Type.displayCutout()
                         | WindowInsetsCompat.Type.ime());
-                lastBars = bars;
-                v.setPadding(padL + bars.left, padT + bars.top, padR + bars.right, padB + bars.bottom);
                 tellPageInsets();
                 return insets;
             });
@@ -215,19 +218,27 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** The bars are already added as padding around the page, so the page keeps its own CSS
-     *  safe-area values at nothing: the two must never be added on top of each other. A copy
-     *  installed from a browser has no such padding and keeps the screen's own insets. */
+    /** The phone's margins, as CSS pixels, pushed into the page. CSS pixels and dp are the same
+     *  length inside this WebView (textZoom is pinned at 100 and the page asks for no scaling), so
+     *  the physical insets are divided by the screen density once, here. */
     private void tellPageInsets() {
-        if (web == null) {
+        if (web == null || lastBars == null) {
             return;
         }
+        float density = getResources().getDisplayMetrics().density;
+        if (density <= 0f) {
+            density = 1f;
+        }
+        insetTop = Math.round(lastBars.top / density);
+        insetBottom = Math.round(lastBars.bottom / density);
+        insetLeft = Math.round(lastBars.left / density);
+        insetRight = Math.round(lastBars.right / density);
         web.evaluateJavascript(
                 "(function(){var d=document.documentElement;if(!d)return;"
-                + "d.style.setProperty('--safe-t','0px');"
-                + "d.style.setProperty('--safe-b','0px');"
-                + "d.style.setProperty('--safe-l','0px');"
-                + "d.style.setProperty('--safe-r','0px');})()", null);
+                + "d.style.setProperty('--safe-t','" + insetTop + "px');"
+                + "d.style.setProperty('--safe-b','" + insetBottom + "px');"
+                + "d.style.setProperty('--safe-l','" + insetLeft + "px');"
+                + "d.style.setProperty('--safe-r','" + insetRight + "px');})()", null);
     }
 
     /** The fetched page, if there is one that still looks like UNote - and only if it is newer than
@@ -272,9 +283,26 @@ public class MainActivity extends Activity {
             return otaFile != null && otaFile.isFile();
         }
 
+        /** The same values as the CSS variables, for a page that has just started and would
+         *  otherwise draw one frame under the status bar. */
         @JavascriptInterface
-        public boolean insetsPadded() {
-            return lastBars != null;
+        public int safeTop() {
+            return insetTop;
+        }
+
+        @JavascriptInterface
+        public int safeBottom() {
+            return insetBottom;
+        }
+
+        @JavascriptInterface
+        public int safeLeft() {
+            return insetLeft;
+        }
+
+        @JavascriptInterface
+        public int safeRight() {
+            return insetRight;
         }
 
         @JavascriptInterface

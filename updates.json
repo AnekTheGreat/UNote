@@ -1,8 +1,10 @@
 {
   "app": "UNote",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "date": "2026-11-12",
   "notes": [
+    "The top of the page sits below the status bar on every phone now. The page was written to keep clear of the phone's own bars, and a browser tells it how tall they are - but an Android WebView reports nothing at all, so inside the app the first row of the screen was drawn under the clock: the Write/Read/Draw switch and the buttons beside it ended up on top of the time and the battery. The app now measures the status bar, the notch, the navigation bar and the keyboard itself and hands those heights to the page, so the two copies lay themselves out the same way on a small phone, a tall one, a phone with a cutout, and with three buttons or a gesture bar at the bottom. The heights are measured again on a rotation and whenever the keyboard opens, so nothing goes stale.",
+    "The bottom of the page keeps its own margin once, not twice: the content area no longer adds the navigation bar on top of the page's own padding. Nothing else about the notebook changes.",
     "A backup is the whole notebook now. Notes, folders, tags, settings, pictures, recordings and the Vault travel together: every Vault note goes into the file sealed, with the salt and the verifier that were made from your PIN, so the PIN you already had is the PIN that opens them on the other side. Anything written while the Vault was locked went with the file too, which used to be the one thing a backup left behind.",
     "Import puts the Vault back where it belongs. The sealed notes go into the Vault and wait there, locked, until you type the PIN they were sealed with - they no longer come back as untitled strays in the note list or in the Trash. A backup from an older version that carried its sealed records among the plain notes is sorted out on the way in, and any such strays already on the phone are moved into the Vault once, on launch.",
     "If this phone already has a Vault of its own, with notes inside it and a different PIN, that Vault is left exactly as it was and the app says so, instead of quietly dropping the one in the backup.",
@@ -10,6 +12,15 @@
     "The top of the page keeps clear of the status bar and the notch, and the row of buttons at the bottom keeps clear of the navigation bar, in the app and in the copy installed from the browser. The bar along the top is taller with room to tap, the sheet's buttons wrap instead of crowding, and a dialog can never grow past the screen it is on."
   ],
   "history": [
+    {
+      "version": "1.0.21",
+      "date": "2026-11-12",
+      "title": "The bar below the status bar, on every phone",
+      "notes": [
+        "The top of the page sits below the status bar on every phone now. The page was written to keep clear of the phone's own bars, and a browser tells it how tall they are - but an Android WebView reports nothing at all, so inside the app the first row of the screen was drawn under the clock: the Write/Read/Draw switch and the buttons beside it ended up on top of the time and the battery. The app now measures the status bar, the notch, the navigation bar and the keyboard itself and hands those heights to the page, so the two copies lay themselves out the same way on a small phone, a tall one, a phone with a cutout, and with three buttons or a gesture bar at the bottom. The heights are measured again on a rotation and whenever the keyboard opens, so nothing goes stale.",
+        "The bottom of the page keeps its own margin once, not twice: the content area no longer adds the navigation bar on top of the page's own padding. Nothing else about the notebook changes."
+      ]
+    },
     {
       "version": "1.0.20",
       "date": "2026-11-12",

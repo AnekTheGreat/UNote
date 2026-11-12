@@ -1143,15 +1143,20 @@ async function boot() {
   const meta = await vaultMeta();
   if (meta && meta.on) { S.vault.on = true; S.vault.salt = meta.salt; S.vault.verifier = meta.verifier; }
 
-  /* 1.0.20 - the CSS safe-area values are the screen's own margins. Inside the installed app the
-     padding is on the page's frame instead (MainActivity sets these to nothing once it has done
-     that), so the status bar is cleared once, not twice. */
+  /* 1.0.21 - the page keeps clear of the phone's own bars. A browser hands their heights over as
+     env(safe-area-inset-*); an Android WebView reports nothing at all, which is why the top of the
+     screen ended up under the clock in the app. The app hands over the same heights, in the same
+     unit, so both copies lay themselves out the same way on every phone. */
   (function () {
     const nf = nativeFiles();
-    if (nf && typeof nf.insetsPadded === 'function' && nf.insetsPadded()) {
-      ['--safe-t', '--safe-b', '--safe-l', '--safe-r'].forEach(v =>
-        document.documentElement.style.setProperty(v, '0px'));
-    }
+    if (!nf || typeof nf.safeTop !== 'function') return;
+    const put = (name, v) => {
+      if (typeof v === 'number' && v >= 0) document.documentElement.style.setProperty(name, v + 'px');
+    };
+    try { put('--safe-t', nf.safeTop()); } catch (e) {}
+    try { put('--safe-b', nf.safeBottom()); } catch (e) {}
+    try { put('--safe-l', nf.safeLeft()); } catch (e) {}
+    try { put('--safe-r', nf.safeRight()); } catch (e) {}
   })();
 
   document.documentElement.dataset.theme = S.settings.theme || 'dark';

@@ -331,7 +331,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
     transform:translateX(-102%);transition:transform .24s cubic-bezier(.3,.9,.3,1);box-shadow:var(--shadow);
   }
   #side.open{transform:none}
-  #main{grid-column:1;padding-bottom:calc(58px + var(--safe-b))}
+  #main{grid-column:1;padding-bottom:58px}
   #top{padding:10px 12px;min-height:54px}
   #menuBtn{display:grid}
   #doc{padding:14px 16px 0}
@@ -603,7 +603,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.20';
+const VERSION = '1.0.21';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -2449,15 +2449,20 @@ async function boot() {
   const meta = await vaultMeta();
   if (meta && meta.on) { S.vault.on = true; S.vault.salt = meta.salt; S.vault.verifier = meta.verifier; }
 
-  /* 1.0.20 - the CSS safe-area values are the screen's own margins. Inside the installed app the
-     padding is on the page's frame instead (MainActivity sets these to nothing once it has done
-     that), so the status bar is cleared once, not twice. */
+  /* 1.0.21 - the page keeps clear of the phone's own bars. A browser hands their heights over as
+     env(safe-area-inset-*); an Android WebView reports nothing at all, which is why the top of the
+     screen ended up under the clock in the app. The app hands over the same heights, in the same
+     unit, so both copies lay themselves out the same way on every phone. */
   (function () {
     const nf = nativeFiles();
-    if (nf && typeof nf.insetsPadded === 'function' && nf.insetsPadded()) {
-      ['--safe-t', '--safe-b', '--safe-l', '--safe-r'].forEach(v =>
-        document.documentElement.style.setProperty(v, '0px'));
-    }
+    if (!nf || typeof nf.safeTop !== 'function') return;
+    const put = (name, v) => {
+      if (typeof v === 'number' && v >= 0) document.documentElement.style.setProperty(name, v + 'px');
+    };
+    try { put('--safe-t', nf.safeTop()); } catch (e) {}
+    try { put('--safe-b', nf.safeBottom()); } catch (e) {}
+    try { put('--safe-l', nf.safeLeft()); } catch (e) {}
+    try { put('--safe-r', nf.safeRight()); } catch (e) {}
   })();
 
   document.documentElement.dataset.theme = S.settings.theme || 'dark';
