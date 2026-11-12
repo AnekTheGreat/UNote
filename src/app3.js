@@ -1162,7 +1162,9 @@ async function boot() {
   document.documentElement.dataset.theme = S.settings.theme || 'dark';
   setAccent(S.settings.accent || '#7c5cff');
   document.documentElement.style.setProperty('--size', (S.settings.size || 16) + 'px');
-  setMode(saved && saved.mode ? saved.mode : (window.innerWidth < 860 ? 'read' : 'split'));
+  /* 1.0.22 - the width the drawer gives way at is 600, so a folded foldable or a small tablet
+     opens in Split instead of squeezing two panes into a phone's reading mode. */
+  setMode(saved && saved.mode ? saved.mode : (window.innerWidth < 600 ? 'read' : 'split'));
   $('#sVer').textContent = 'UNote ' + VERSION;
 
   const recs = await dbAll('notes');

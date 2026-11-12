@@ -1,8 +1,12 @@
 {
   "app": "UNote",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "date": "2026-11-12",
   "notes": [
+    "The page now lays itself out for the shape of the screen it is on, not just its width. A folded foldable and a phone keep the drawer and the row of buttons at the bottom; an unfolded foldable or a small tablet gets the rail and the note list as a column of their own, with the note beside them instead of behind a button; a tablet or a desktop window also gets the links pane back, and the writing column stops widening and sits in the middle, so a line of text stays a line of text instead of running the whole way across.",
+    "A flip's cover screen, and any phone held sideways, get a short-screen layout: the word count bar at the bottom gives way first, the title and the margins shrink, the top bar gets shorter and the row of buttons at the bottom drops to 50 pixels, so the note itself keeps the room.",
+    "On the narrowest covers one row of controls has to do: the search box gives way, the buttons tighten, and the dialogs and the PIN pad lose their side margins rather than their buttons.",
+    "Folding and unfolding no longer restarts the page. The app now handles a change of smallest size and of pixel density itself, the way it already handled a rotation, so the note you had open is the note you still have open when the screen grows or folds.",
     "The top of the page sits below the status bar on every phone now. The page was written to keep clear of the phone's own bars, and a browser tells it how tall they are - but an Android WebView reports nothing at all, so inside the app the first row of the screen was drawn under the clock: the Write/Read/Draw switch and the buttons beside it ended up on top of the time and the battery. The app now measures the status bar, the notch, the navigation bar and the keyboard itself and hands those heights to the page, so the two copies lay themselves out the same way on a small phone, a tall one, a phone with a cutout, and with three buttons or a gesture bar at the bottom. The heights are measured again on a rotation and whenever the keyboard opens, so nothing goes stale.",
     "The bottom of the page keeps its own margin once, not twice: the content area no longer adds the navigation bar on top of the page's own padding. Nothing else about the notebook changes.",
     "A backup is the whole notebook now. Notes, folders, tags, settings, pictures, recordings and the Vault travel together: every Vault note goes into the file sealed, with the salt and the verifier that were made from your PIN, so the PIN you already had is the PIN that opens them on the other side. Anything written while the Vault was locked went with the file too, which used to be the one thing a backup left behind.",
@@ -12,6 +16,17 @@
     "The top of the page keeps clear of the status bar and the notch, and the row of buttons at the bottom keeps clear of the navigation bar, in the app and in the copy installed from the browser. The bar along the top is taller with room to tap, the sheet's buttons wrap instead of crowding, and a dialog can never grow past the screen it is on."
   ],
   "history": [
+    {
+      "version": "1.0.22",
+      "date": "2026-11-12",
+      "title": "Folded, unfolded, flipped, on its side",
+      "notes": [
+        "The page now lays itself out for the shape of the screen it is on, not just its width. A folded foldable and a phone keep the drawer and the row of buttons at the bottom; an unfolded foldable or a small tablet gets the rail and the note list as a column of their own, with the note beside them instead of behind a button; a tablet or a desktop window also gets the links pane back, and the writing column stops widening and sits in the middle, so a line of text stays a line of text instead of running the whole way across.",
+        "A flip's cover screen, and any phone held sideways, get a short-screen layout: the word count bar at the bottom gives way first, the title and the margins shrink, the top bar gets shorter and the row of buttons at the bottom drops to 50 pixels, so the note itself keeps the room.",
+        "On the narrowest covers one row of controls has to do: the search box gives way, the buttons tighten, and the dialogs and the PIN pad lose their side margins rather than their buttons.",
+        "Folding and unfolding no longer restarts the page. The app now handles a change of smallest size and of pixel density itself, the way it already handled a rotation, so the note you had open is the note you still have open when the screen grows or folds."
+      ]
+    },
     {
       "version": "1.0.21",
       "date": "2026-11-12",

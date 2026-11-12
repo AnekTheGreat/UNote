@@ -25,6 +25,9 @@
        zeroed again because the app pads the page itself - so nothing is ever counted twice. */
     --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
     --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
+    /* How tall the row of buttons at the bottom is on a phone. A flip's cover screen is short, so
+       that row shrinks there; everything that has to clear it is measured from this one number. */
+    --rail:58px;
   }
   [data-theme="light"]{
     --bg:#eef1f9; --panel:rgba(255,255,255,.72); --panel2:rgba(255,255,255,.66); --panel3:rgba(255,255,255,.55);
@@ -318,20 +321,23 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   #app{grid-template-columns:58px 252px minmax(0,1fr)}
   #right{display:none}
 }
-@media (max-width:860px){
+/* 1.0.22 - a phone is the narrow case, not the only case. A folded foldable, an unfolded one, a
+   tablet and a desktop window each get the layout they have room for; the drawer below is for a
+   hand-held width, and stops at 600px instead of swallowing every screen under 860. */
+@media (max-width:600px){
   #app{grid-template-columns:1fr}
   #rail{
-    position:fixed;bottom:0;left:0;right:0;height:calc(58px + var(--safe-b));flex-direction:row;justify-content:space-around;
+    position:fixed;bottom:0;left:0;right:0;height:calc(var(--rail) + var(--safe-b));flex-direction:row;justify-content:space-around;
     padding:0 6px var(--safe-b);border-right:0;border-top:1px solid var(--line);z-index:30;
     background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(14px);
   }
   .rspacer,#railLock{display:none}
   #side{
-    position:fixed;top:var(--safe-t);bottom:calc(58px + var(--safe-b));left:0;width:min(300px,86vw);z-index:35;
+    position:fixed;top:var(--safe-t);bottom:calc(var(--rail) + var(--safe-b));left:0;width:min(300px,86vw);z-index:35;
     transform:translateX(-102%);transition:transform .24s cubic-bezier(.3,.9,.3,1);box-shadow:var(--shadow);
   }
   #side.open{transform:none}
-  #main{grid-column:1;padding-bottom:58px}
+  #main{grid-column:1;padding-bottom:var(--rail)}
   #top{padding:10px 12px;min-height:54px}
   #menuBtn{display:grid}
   #doc{padding:14px 16px 0}
@@ -449,12 +455,77 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   .rec-dot{width:12px;height:12px;border-radius:50%;background:var(--err);margin:0 auto 10px;animation:pulse 1.4s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   #status #btnWhats,#status [data-apps]{display:none}
-  @media (max-width:860px){
+  @media (max-width:600px){
     #doc{padding:16px 18px 0}
     #title{font-size:22px}
     #modes button[data-mode="split"]{display:none}
     .docmeta{margin:8px 0 14px}
     .md img{border-radius:12px}
+  }
+
+  /* ---- 1.0.22: every shape of screen ---- */
+  /* A flip's cover screen is a few hundred pixels tall. A folded phone is a narrow column. An
+     unfolded foldable, a tablet and a desktop window are wider than the three-column layout was
+     built for. Nothing here changes what the page does - only how much of it fits, and how much
+     of the room it uses. */
+  @media (min-width:601px){
+    #menuBtn{display:none}            /* the sidebar is a column, not a drawer */
+    #sideClose{display:none}
+  }
+  /* small tablet, or an unfolded foldable held in portrait: rail and sidebar, no third pane */
+  @media (min-width:601px) and (max-width:899px){
+    #app{grid-template-columns:52px 226px minmax(0,1fr)}
+    #doc{padding:18px 20px 0}
+    #title{font-size:24px}
+    .docmeta{margin:8px 0 14px}
+    #panes.split{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+    #panes.split #ed{min-height:0}
+  }
+  /* a tablet or an unfolded foldable with the room for the links pane */
+  @media (min-width:1181px){
+    #doc{padding:26px 34px 0}
+  }
+  /* a wide window: the writing column stops growing and sits in the middle, so a line of text
+     stays a line of text instead of a ruler across the whole screen */
+  @media (min-width:1400px){
+    #doc{padding:28px 44px 0}
+    #title,#docmeta,#panes,#inkwrap{width:100%;max-width:1240px;margin-left:auto;margin-right:auto}
+  }
+  @media (min-width:1800px){
+    #app{grid-template-columns:64px 296px minmax(0,1fr) 340px}
+  }
+  /* a phone on its side, or the cover screen of a flip: short, so the furniture shrinks first */
+  @media (max-height:520px){
+    :root{--rail:50px}
+    #status{display:none}             /* the word count is the first thing to give up */
+    #top{min-height:46px;padding:6px 10px}
+    #doc{padding:10px 14px 0}
+    #title{font-size:19px}
+    .docmeta{margin:6px 0 10px;gap:6px;font-size:10.5px}
+    .sidehead{padding:8px 12px 6px}
+    .quick{padding:0 10px 8px}
+    .quick button{padding:6px 8px;font-size:12px}
+    #panes.split #ed{min-height:0}
+    #dlg{max-height:calc(100dvh - 12px)}
+    .empty h2{font-size:18px}
+    .empty p{font-size:12.5px}
+    .inkhint{display:none}
+  }
+  /* the narrowest covers and the smallest phones: one row of controls has to do */
+  @media (max-width:380px){
+    #doc{padding:12px 12px 0}
+    #title{font-size:20px}
+    #top{gap:5px;padding:8px 8px}
+    .iconbtn{width:32px;height:32px}
+    .modes button{padding:4px 6px;font-size:10.5px}
+    .brand{font-size:15px}
+    .sidehead{padding:10px 10px 8px}
+    .quick{grid-template-columns:1fr auto auto;gap:5px;padding:0 8px 8px}
+    .quick button{padding:7px 7px;font-size:11.5px}
+    .dlghead,.dlgbody,.dlgfoot{padding-left:13px;padding-right:13px}
+    .pindots{gap:8px}
+    .pinpad{gap:7px}
+    .pinpad button{padding:12px 0}
   }
 </style>
 </head>
