@@ -88,6 +88,7 @@ function renderSide() {
     list.forEach(n => {
       h += '<button class="noteitem' + (S.current && S.current.id === n.id ? ' on' : '') + '" data-note="' + n.id + '">' +
         (n.fav ? '<span class="st">★</span>' : '') +
+        (n.ink && n.ink.s && n.ink.s.length ? '<span class="st" title="Handwriting">✎</span>' : '') +
         '<span class="t">' + esc(noteTitle(n)) + '</span>' +
         '<span class="f">' + fmtWhen(n.updated).replace(/^just now$/, 'now') + '</span></button>';
     });
@@ -118,12 +119,14 @@ function renderDoc() {
   $('#docmeta').innerHTML =
     (n.vault ? '<span class="pill acc">In the Vault</span>' : '') +
     (n.folder ? '<span class="pill">' + esc(n.folder) + '</span>' : '') +
+    (n.ink && n.ink.s && n.ink.s.length ? '<span class="pill acc">Handwriting</span>' : '') +
     tags.slice(0, 6).map(t => '<span class="pill">#' + esc(t) + '</span>').join('') +
     '<span class="pill">' + fmtWhen(n.updated) + '</span>' +
     '<span class="pill">' + words(n.body) + ' words · ' + Math.max(1, Math.round(words(n.body) / 220)) + ' min read</span>';
   $('#btnFav').classList.toggle('on', !!n.fav);
   $('#sWords').textContent = words(n.body) + ' words';
   renderRight();
+  if (typeof inkSync === 'function') inkSync();
 }
 
 /* One place that fills the reading pane, so Read mode can never come up blank: if the markdown
@@ -228,6 +231,7 @@ function setMode(mode) {
   $('#panes').classList.toggle('split', mode === 'split');
   $$('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
   if (mode !== 'edit') showReading();      // switching to Read always renders the note
+  if (mode === 'draw' && typeof inkSync === 'function') inkSync();
   kvSet('settings', S.settings);
 }
 

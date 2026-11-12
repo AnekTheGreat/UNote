@@ -140,6 +140,21 @@ input,textarea{font:inherit;color:inherit}
 body[data-mode="edit"] #pv{display:none}
 body[data-mode="read"] #ed{display:none}
 body[data-mode="read"] #panes{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr)}
+/* 1.0.17 - the Draw pane: a page under the title, the pens above it. */
+#inkwrap{display:none;flex:1;flex-direction:column;gap:10px;min-height:0;padding-bottom:18px}
+body[data-mode="draw"] #panes{display:none}
+body[data-mode="draw"] #inkwrap{display:flex}
+#inkbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#inkbar .sw{width:26px;height:26px;border-radius:9px;border:1px solid var(--line2);padding:0;cursor:pointer}
+#inkbar .sw.on{outline:2px solid var(--accent);outline-offset:2px}
+#inkbar .wbtn{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line2);background:none;cursor:pointer}
+#inkbar .wbtn i{display:block;border-radius:50%;background:currentColor}
+#inkbar .wbtn.on{border-color:var(--accent);color:var(--accent)}
+#inkbar .inksep{width:1px;height:22px;background:var(--line2);margin:0 3px}
+#inkbar .btn.on{border-color:var(--accent);color:var(--accent)}
+#inkbar .btn[disabled]{opacity:.4}
+#inkc{flex:1;width:100%;min-height:220px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);touch-action:none;cursor:crosshair;overscroll-behavior:contain}
+.inkhint{font-size:11.5px;color:var(--dim2);line-height:1.5}
 
 .empty{flex:1;display:grid;place-items:center;text-align:center;padding:30px}
 .empty[hidden]{display:none}
@@ -488,6 +503,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
         <button data-mode="edit">Write</button>
         <button data-mode="split" class="on">Split</button>
         <button data-mode="read">Read</button>
+        <button data-mode="draw">Draw</button>
       </div>
       <button class="iconbtn" id="btnFav" title="Pin to favourites" aria-label="Pin to favourites">
         <svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.9l6-.8z"/></svg>
@@ -503,6 +519,27 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
       <div id="panes">
         <textarea id="ed" placeholder="Start writing. [[Another note]] links them together. #tag files it." spellcheck="true"></textarea>
         <div id="pv" class="md"></div>
+      </div>
+      <div id="inkwrap">
+        <div id="inkbar">
+          <button class="sw" data-inkc="ink" title="The note's own text colour" style="background:currentColor"></button>
+          <button class="sw" data-inkc="#f5a524" title="Amber" style="background:#f5a524"></button>
+          <button class="sw" data-inkc="#e5484d" title="Red" style="background:#e5484d"></button>
+          <button class="sw" data-inkc="#12a594" title="Green" style="background:#12a594"></button>
+          <button class="sw" data-inkc="#7c5cff" title="Violet" style="background:#7c5cff"></button>
+          <button class="sw" data-inkc="#0091ff" title="Blue" style="background:#0091ff"></button>
+          <button class="sw" data-inkc="#ffffff" title="White" style="background:#ffffff"></button>
+          <span class="inksep"></span>
+          <button class="wbtn" data-inkw="2" title="Thin"><i style="width:3px;height:3px"></i></button>
+          <button class="wbtn" data-inkw="3" title="Medium"><i style="width:6px;height:6px"></i></button>
+          <button class="wbtn" data-inkw="6" title="Thick"><i style="width:10px;height:10px"></i></button>
+          <span class="grow"></span>
+          <button class="btn" id="inkErase" title="Erase whole strokes">Eraser</button>
+          <button class="btn" id="inkUndo" title="Undo the last stroke">Undo</button>
+          <button class="btn" id="inkClear" title="Empty the page">Clear</button>
+        </div>
+        <canvas id="inkc"></canvas>
+        <div class="inkhint">Write with a finger, a stylus or a mouse. A stylus draws thicker where you press harder, and a hand resting on the screen is ignored while the pen is out.</div>
       </div>
     </section>
 

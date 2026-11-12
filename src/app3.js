@@ -210,7 +210,7 @@ async function decryptVault() {
   for (const r of vrecs) {
     try {
       const j = JSON.parse(await aesDec(S.vault.key, r.iv, r.ct));
-      out.push({ id: r.id, vault: true, title: j.title || '', body: j.body || '', folder: j.folder || '', fav: !!j.fav, created: r.created, updated: r.updated, deleted: 0 });
+      out.push({ id: r.id, vault: true, title: j.title || '', body: j.body || '', folder: j.folder || '', fav: !!j.fav, ink: j.ink || null, created: r.created, updated: r.updated, deleted: 0 });
     } catch (e) { /* a record this key cannot read stays sealed */ }
   }
   S.vault.notes = vrecs;
@@ -233,10 +233,12 @@ async function flushVaultPending() {
     if (here) {
       if ((p.updated || 0) < (here.updated || 0)) continue;
       here.title = p.title || ''; here.body = p.body || ''; here.folder = p.folder || '';
+      here.ink = p.ink || null;
       await saveNote(here, { quiet: true });
     } else {
       const n = {
         id: id, vault: true, title: p.title || '', body: p.body || '', folder: p.folder || '', fav: !!p.fav,
+        ink: p.ink || null,
         created: p.created || p.updated || nowMs(), updated: p.updated || nowMs(), deleted: 0,
       };
       S.vault.plain.unshift(n);

@@ -11,7 +11,7 @@ import io, sys, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHELL = os.path.join(ROOT, 'src', 'shell.html')
-PARTS = [os.path.join(ROOT, 'src', 'app%d.js' % i) for i in (1, 2, 3)]
+PARTS = [os.path.join(ROOT, 'src', 'app%d.js' % i) for i in (1, 2, 3, 4)]
 OUT = os.path.join(ROOT, 'index.html')
 
 

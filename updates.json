@@ -1,16 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.16",
-  "date": "2026-11-09",
+  "version": "1.0.17",
+  "date": "2026-11-12",
   "notes": [
-    "The Vault no longer loses a note to locking. When it locks, the note you had open is written first, so the last thing you typed is still there when you come back.",
-    "Words typed while the Vault was locked are kept. A save that could not be encrypted used to be dropped in silence, which is how the end of a note could vanish after the automatic lock. It now waits on the phone and is saved the moment your PIN is back.",
-    "Moving a note into the Vault writes it once, complete. The old code wrote an empty sealed record first, and a note caught in that moment could never be read again.",
-    "A star on a Vault note now survives a lock, like every other note.",
-    "If sealed notes are on this phone but the record that checks the PIN is missing, the app says so instead of offering a new PIN that would bury them for good.",
-    "Less nagging: the Vault no longer shuts itself while a Vault note is open, and the side bar says how many notes are sealed behind the lock."
+    "Handwriting. A note has a Draw pane now, beside Write, Split and Read: a page you write on with a finger, a stylus or a mouse. It sits under the same title as the words, so one note can hold a shopping list and a scribbled diagram.",
+    "Seven colours and three widths, an eraser, undo and redo, and a Clear that asks twice. The first colour is the text colour itself, so a drawing is readable in the dark theme and the light one without picking a colour at all. Ctrl/Cmd+Z undoes a stroke while the Draw pane is on screen.",
+    "A stylus is treated like a pen. Pressing harder draws a thicker line, a fast line keeps every point the pen reported instead of cutting the corners, and once the stylus has been seen a finger touching the screen within a second and a half is taken for a hand resting on it and ignored. The eraser end of a stylus erases.",
+    "The ink is part of the note, not a picture beside it. It is saved the same way the words are, it travels in a backup and in a transfer code, and a note in the Vault has its ink sealed with it. A note with a drawing shows a small pen in the list and a Handwriting tag above the page."
   ],
   "history": [
+    {
+      "version": "1.0.17",
+      "date": "2026-11-12",
+      "title": "Handwriting: draw on a note with a pen or a stylus",
+      "notes": [
+        "Handwriting. A note has a Draw pane now, beside Write, Split and Read: a page you write on with a finger, a stylus or a mouse. It sits under the same title as the words, so one note can hold a shopping list and a scribbled diagram.",
+        "Seven colours and three widths, an eraser, undo and redo, and a Clear that asks twice. The first colour is the text colour itself, so a drawing is readable in the dark theme and the light one without picking a colour at all. Ctrl/Cmd+Z undoes a stroke while the Draw pane is on screen.",
+        "A stylus is treated like a pen. Pressing harder draws a thicker line, a fast line keeps every point the pen reported instead of cutting the corners, and once the stylus has been seen a finger touching the screen within a second and a half is taken for a hand resting on it and ignored. The eraser end of a stylus erases.",
+        "The ink is part of the note, not a picture beside it. It is saved the same way the words are, it travels in a backup and in a transfer code, and a note in the Vault has its ink sealed with it. A note with a drawing shows a small pen in the list and a Handwriting tag above the page."
+      ]
+    },
     {
       "version": "1.0.16",
       "date": "2026-11-09",

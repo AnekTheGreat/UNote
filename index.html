@@ -140,6 +140,21 @@ input,textarea{font:inherit;color:inherit}
 body[data-mode="edit"] #pv{display:none}
 body[data-mode="read"] #ed{display:none}
 body[data-mode="read"] #panes{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr)}
+/* 1.0.17 - the Draw pane: a page under the title, the pens above it. */
+#inkwrap{display:none;flex:1;flex-direction:column;gap:10px;min-height:0;padding-bottom:18px}
+body[data-mode="draw"] #panes{display:none}
+body[data-mode="draw"] #inkwrap{display:flex}
+#inkbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#inkbar .sw{width:26px;height:26px;border-radius:9px;border:1px solid var(--line2);padding:0;cursor:pointer}
+#inkbar .sw.on{outline:2px solid var(--accent);outline-offset:2px}
+#inkbar .wbtn{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line2);background:none;cursor:pointer}
+#inkbar .wbtn i{display:block;border-radius:50%;background:currentColor}
+#inkbar .wbtn.on{border-color:var(--accent);color:var(--accent)}
+#inkbar .inksep{width:1px;height:22px;background:var(--line2);margin:0 3px}
+#inkbar .btn.on{border-color:var(--accent);color:var(--accent)}
+#inkbar .btn[disabled]{opacity:.4}
+#inkc{flex:1;width:100%;min-height:220px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);touch-action:none;cursor:crosshair;overscroll-behavior:contain}
+.inkhint{font-size:11.5px;color:var(--dim2);line-height:1.5}
 
 .empty{flex:1;display:grid;place-items:center;text-align:center;padding:30px}
 .empty[hidden]{display:none}
@@ -488,6 +503,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
         <button data-mode="edit">Write</button>
         <button data-mode="split" class="on">Split</button>
         <button data-mode="read">Read</button>
+        <button data-mode="draw">Draw</button>
       </div>
       <button class="iconbtn" id="btnFav" title="Pin to favourites" aria-label="Pin to favourites">
         <svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.9l6-.8z"/></svg>
@@ -503,6 +519,27 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
       <div id="panes">
         <textarea id="ed" placeholder="Start writing. [[Another note]] links them together. #tag files it." spellcheck="true"></textarea>
         <div id="pv" class="md"></div>
+      </div>
+      <div id="inkwrap">
+        <div id="inkbar">
+          <button class="sw" data-inkc="ink" title="The note's own text colour" style="background:currentColor"></button>
+          <button class="sw" data-inkc="#f5a524" title="Amber" style="background:#f5a524"></button>
+          <button class="sw" data-inkc="#e5484d" title="Red" style="background:#e5484d"></button>
+          <button class="sw" data-inkc="#12a594" title="Green" style="background:#12a594"></button>
+          <button class="sw" data-inkc="#7c5cff" title="Violet" style="background:#7c5cff"></button>
+          <button class="sw" data-inkc="#0091ff" title="Blue" style="background:#0091ff"></button>
+          <button class="sw" data-inkc="#ffffff" title="White" style="background:#ffffff"></button>
+          <span class="inksep"></span>
+          <button class="wbtn" data-inkw="2" title="Thin"><i style="width:3px;height:3px"></i></button>
+          <button class="wbtn" data-inkw="3" title="Medium"><i style="width:6px;height:6px"></i></button>
+          <button class="wbtn" data-inkw="6" title="Thick"><i style="width:10px;height:10px"></i></button>
+          <span class="grow"></span>
+          <button class="btn" id="inkErase" title="Erase whole strokes">Eraser</button>
+          <button class="btn" id="inkUndo" title="Undo the last stroke">Undo</button>
+          <button class="btn" id="inkClear" title="Empty the page">Clear</button>
+        </div>
+        <canvas id="inkc"></canvas>
+        <div class="inkhint">Write with a finger, a stylus or a mouse. A stylus draws thicker where you press harder, and a hand resting on the screen is ignored while the pen is out.</div>
       </div>
     </section>
 
@@ -552,7 +589,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.16';
+const VERSION = '1.0.17';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -802,11 +839,12 @@ async function saveNote(note, opts) {
       (S.vault.pending = S.vault.pending || {})[note.id] = {
         id: note.id, title: note.title || '', body: note.body || '', folder: note.folder || '',
         created: note.created || note.updated, updated: note.updated, fav: !!note.fav,
+        ink: note.ink || null,
       };
       kvSet('vaultpending', S.vault.pending).catch(() => {});
       return;
     }
-    const box = await aesEnc(S.vault.key, JSON.stringify({ title: note.title, body: note.body, folder: note.folder, fav: !!note.fav }));
+    const box = await aesEnc(S.vault.key, JSON.stringify({ title: note.title, body: note.body, folder: note.folder, fav: !!note.fav, ink: note.ink || null }));
     const rec = { id: note.id, vault: true, created: note.created, updated: note.updated, iv: box.iv, ct: box.ct };
     const idx = S.vault.notes.findIndex(r => r.id === note.id);
     if (idx >= 0) S.vault.notes[idx] = rec; else S.vault.notes.push(rec);
@@ -915,6 +953,7 @@ function renderSide() {
     list.forEach(n => {
       h += '<button class="noteitem' + (S.current && S.current.id === n.id ? ' on' : '') + '" data-note="' + n.id + '">' +
         (n.fav ? '<span class="st">★</span>' : '') +
+        (n.ink && n.ink.s && n.ink.s.length ? '<span class="st" title="Handwriting">✎</span>' : '') +
         '<span class="t">' + esc(noteTitle(n)) + '</span>' +
         '<span class="f">' + fmtWhen(n.updated).replace(/^just now$/, 'now') + '</span></button>';
     });
@@ -945,12 +984,14 @@ function renderDoc() {
   $('#docmeta').innerHTML =
     (n.vault ? '<span class="pill acc">In the Vault</span>' : '') +
     (n.folder ? '<span class="pill">' + esc(n.folder) + '</span>' : '') +
+    (n.ink && n.ink.s && n.ink.s.length ? '<span class="pill acc">Handwriting</span>' : '') +
     tags.slice(0, 6).map(t => '<span class="pill">#' + esc(t) + '</span>').join('') +
     '<span class="pill">' + fmtWhen(n.updated) + '</span>' +
     '<span class="pill">' + words(n.body) + ' words · ' + Math.max(1, Math.round(words(n.body) / 220)) + ' min read</span>';
   $('#btnFav').classList.toggle('on', !!n.fav);
   $('#sWords').textContent = words(n.body) + ' words';
   renderRight();
+  if (typeof inkSync === 'function') inkSync();
 }
 
 /* One place that fills the reading pane, so Read mode can never come up blank: if the markdown
@@ -1055,6 +1096,7 @@ function setMode(mode) {
   $('#panes').classList.toggle('split', mode === 'split');
   $$('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
   if (mode !== 'edit') showReading();      // switching to Read always renders the note
+  if (mode === 'draw' && typeof inkSync === 'function') inkSync();
   kvSet('settings', S.settings);
 }
 
@@ -1456,7 +1498,7 @@ async function decryptVault() {
   for (const r of vrecs) {
     try {
       const j = JSON.parse(await aesDec(S.vault.key, r.iv, r.ct));
-      out.push({ id: r.id, vault: true, title: j.title || '', body: j.body || '', folder: j.folder || '', fav: !!j.fav, created: r.created, updated: r.updated, deleted: 0 });
+      out.push({ id: r.id, vault: true, title: j.title || '', body: j.body || '', folder: j.folder || '', fav: !!j.fav, ink: j.ink || null, created: r.created, updated: r.updated, deleted: 0 });
     } catch (e) { /* a record this key cannot read stays sealed */ }
   }
   S.vault.notes = vrecs;
@@ -1479,10 +1521,12 @@ async function flushVaultPending() {
     if (here) {
       if ((p.updated || 0) < (here.updated || 0)) continue;
       here.title = p.title || ''; here.body = p.body || ''; here.folder = p.folder || '';
+      here.ink = p.ink || null;
       await saveNote(here, { quiet: true });
     } else {
       const n = {
         id: id, vault: true, title: p.title || '', body: p.body || '', folder: p.folder || '', fav: !!p.fav,
+        ink: p.ink || null,
         created: p.created || p.updated || nowMs(), updated: p.updated || nowMs(), deleted: 0,
       };
       S.vault.plain.unshift(n);
@@ -2934,6 +2978,283 @@ document.addEventListener('DOMContentLoaded', () => {
       'UNote could not start.<br><br><code style="opacity:.7">' + esc(err && err.message) + '</code></div>';
   });
 });
+
+'use strict';
+/* UNote - part 4: handwriting. A note carries ink beside its text: strokes drawn with a finger, a
+   stylus or a mouse, kept on the note and saved the way the words are, so a Vault note's ink is
+   sealed with it and a backup carries it. */
+
+const INK_COLOURS = ['ink', '#f5a524', '#e5484d', '#12a594', '#7c5cff', '#0091ff', '#ffffff'];
+const INK = {
+  c: 'ink',          // 'ink' follows the theme's own text colour, so a note is readable in both
+  w: 3,              // pen width, in page units (before the page is scaled to the screen)
+  er: false,         // eraser on
+  down: false,
+  cur: null,         // the stroke being drawn
+  penAt: 0,          // when the stylus was last seen, so a palm can be told from a finger
+  redo: [],
+  wired: false,
+};
+
+function inkCanvas() { return document.getElementById('inkc'); }
+
+/* A note's ink is { v, w: <page width it was drawn on>, s: [stroke] }; a stroke is
+   { c: colour, w: width, p: [x, y, ...], q: [pressure, ...] } in page units, so a drawing looks the
+   same on a phone and on a wide screen. */
+function inkData(n) {
+  if (!n) return null;
+  if (!n.ink || typeof n.ink !== 'object' || !Array.isArray(n.ink.s)) n.ink = { v: 1, w: 0, s: [] };
+  if (!n.ink.w) n.ink.w = 0;
+  return n.ink;
+}
+
+function inkColour(stroke, cv) {
+  if (!stroke.c || stroke.c === 'ink') {
+    try { return getComputedStyle(cv).color || '#111'; } catch (e) { return '#111'; }
+  }
+  return stroke.c;
+}
+
+/* One stroke, scaled from page units by `sc`. A stylus reports how hard it is pressed and the line
+   thickens where it does; a finger or a mouse reports nothing useful, so the line keeps its width. */
+function inkDrawStroke(g, stroke, sc) {
+  const p = stroke && stroke.p;
+  if (!p || p.length < 2) return;
+  const q = stroke.q || null;
+  const base = Math.max(0.6, (stroke.w || 3) * sc);
+  g.strokeStyle = inkColour(stroke, g.canvas);
+  g.fillStyle = g.strokeStyle;
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  if (p.length === 2) {
+    g.beginPath();
+    g.arc(p[0] * sc, p[1] * sc, Math.max(0.7, base / 2), 0, Math.PI * 2);
+    g.fill();
+    return;
+  }
+  for (let i = 2; i < p.length; i += 2) {
+    const pr = q ? Number(q[i / 2]) : NaN;
+    g.lineWidth = isFinite(pr) && pr > 0 ? base * (0.55 + 0.8 * Math.min(1, pr)) : base;
+    g.beginPath();
+    g.moveTo(p[i - 2] * sc, p[i - 1] * sc);
+    g.lineTo(p[i] * sc, p[i + 1] * sc);
+    g.stroke();
+  }
+}
+
+function inkPaintAll() {
+  const cv = inkCanvas();
+  if (!cv) return;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;                       // the pane is not on screen yet
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+  }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const d = inkData(S.current);
+  if (!d) return;
+  const sc = d.w ? w / d.w : 1;
+  for (const st of d.s) inkDrawStroke(g, st, sc);
+}
+
+/* Repainted rather than stretched: the canvas is only ever as large as the pane it sits in. */
+function inkSync() {
+  inkWire();
+  inkBarState();
+  requestAnimationFrame(inkPaintAll);
+}
+
+function inkBarState() {
+  const d = S.current ? inkData(S.current) : null;
+  $$('#inkbar .sw').forEach(b => b.classList.toggle('on', b.dataset.inkc === INK.c));
+  $$('#inkbar .wbtn').forEach(b => b.classList.toggle('on', Number(b.dataset.inkw) === INK.w));
+  const er = document.getElementById('inkErase');
+  if (er) er.classList.toggle('on', INK.er);
+  const undo = document.getElementById('inkUndo');
+  if (undo) undo.disabled = !(d && d.s.length);
+  const clear = document.getElementById('inkClear');
+  if (clear) clear.disabled = !(d && d.s.length);
+}
+
+function inkPoint(e, cv, d) {
+  const r = cv.getBoundingClientRect();
+  const w = cv.clientWidth || 1;
+  if (!d.w) d.w = w;                          // the page the first stroke is drawn on
+  const sc = d.w ? w / d.w : 1;
+  return [(e.clientX - r.left) / sc, (e.clientY - r.top) / sc,
+    e.pointerType === 'pen' && typeof e.pressure === 'number' ? Math.max(0.02, e.pressure) : NaN];
+}
+
+function inkHit(stroke, x, y, r) {
+  const p = stroke.p || [];
+  const rr = r * r;
+  for (let i = 0; i < p.length; i += 2) {
+    const dx = p[i] - x, dy = p[i + 1] - y;
+    if (dx * dx + dy * dy <= rr) return true;
+  }
+  return false;
+}
+
+function inkEraseAt(cv, d, e) {
+  const [x, y] = inkPoint(e, cv, d);
+  const r = Math.max(14, INK.w * 4);
+  const before = d.s.length;
+  d.s = d.s.filter(st => !inkHit(st, x, y, r + (st.w || 3) / 2));
+  if (d.s.length !== before) {
+    inkDirty();
+    inkPaintAll();
+  }
+}
+
+function inkStart(e) {
+  const cv = inkCanvas(), n = S.current;
+  if (!cv || !n) return;
+  if (e.pointerType === 'pen') INK.penAt = Date.now();
+  /* A palm is not a pen: within 1.5s of the stylus, a finger is a hand resting on the screen. */
+  else if (e.pointerType === 'touch' && Date.now() - INK.penAt < 1500) return;
+  const d = inkData(n);
+  if (INK.er || e.pointerType === 'eraser') { inkEraseAt(cv, d, e); INK.down = true; return; }
+  e.preventDefault();
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  const [x, y, pr] = inkPoint(e, cv, d);
+  const st = { c: INK.c, w: INK.w, p: [x, y] };
+  if (isFinite(pr)) st.q = [pr];
+  d.s.push(st);
+  d.v = 1;
+  INK.cur = st;
+  INK.down = true;
+  INK.redo = [];
+  inkDrawStroke(cv.getContext('2d'), st, cv.clientWidth / (d.w || cv.clientWidth));
+  inkBarState();
+}
+
+function inkMove(e) {
+  if (!INK.down) return;
+  const cv = inkCanvas(), n = S.current;
+  if (!cv || !n) return;
+  const d = inkData(n);
+  if (INK.er || e.pointerType === 'eraser') { inkEraseAt(cv, d, e); return; }
+  const st = INK.cur;
+  if (!st) return;
+  e.preventDefault();
+  /* Every position a stylus reported between two frames is kept, so a fast line curves. */
+  const list = (typeof e.getCoalescedEvents === 'function' && e.getCoalescedEvents().length)
+    ? e.getCoalescedEvents() : [e];
+  const g = cv.getContext('2d');
+  const sc = cv.clientWidth / (d.w || cv.clientWidth);
+  for (const ev of list) {
+    const [x, y, pr] = inkPoint(ev, cv, d);
+    const p = st.p;
+    if (Math.abs(p[p.length - 2] - x) < 0.4 && Math.abs(p[p.length - 1] - y) < 0.4) continue;
+    p.push(x, y);
+    if (st.q) st.q.push(isFinite(pr) ? pr : 0.5);
+    const last = p.length;
+    inkDrawStroke(g, { c: st.c, w: st.w, p: p.slice(last - 4), q: st.q ? st.q.slice(last / 2 - 2) : null }, sc);
+  }
+}
+
+function inkEnd() {
+  if (!INK.down) return;
+  INK.down = false;
+  const st = INK.cur;
+  INK.cur = null;
+  if (!st || !S.current) return;
+  const d = inkData(S.current);
+  if (st.p.length < 2) d.s.pop();
+  inkDirty();
+  inkBarState();
+}
+
+/* A stroke is a change to the note like any other: it is queued for saving, and the two places that
+   say what a note holds - the tag above the page and the pen beside its name in the list - are drawn
+   again, so the pen appears the moment the first stroke is finished. */
+function inkDirty() {
+  if (!S.current) return;
+  if (typeof queueSave === 'function') queueSave();
+  if (typeof renderSide === 'function') renderSide();
+  if (typeof renderDoc === 'function') renderDoc();
+}
+
+function inkUndo() {
+  const d = S.current ? inkData(S.current) : null;
+  if (!d || !d.s.length) return;
+  INK.redo.push(d.s.pop());
+  inkDirty();
+  inkPaintAll();
+  inkBarState();
+}
+
+function inkRedo() {
+  const d = S.current ? inkData(S.current) : null;
+  if (!d || !INK.redo.length) return;
+  d.s.push(INK.redo.pop());
+  inkDirty();
+  inkPaintAll();
+  inkBarState();
+}
+
+/* Clear asks twice - the second tap empties the page - because clearing cannot be undone. */
+let inkClearAt = 0;
+function inkClear() {
+  const d = S.current ? inkData(S.current) : null;
+  if (!d || !d.s.length) return;
+  const btn = document.getElementById('inkClear');
+  if (Date.now() - inkClearAt > 2600) {
+    inkClearAt = Date.now();
+    if (btn) { btn.textContent = 'Tap again to clear'; setTimeout(() => { btn.textContent = 'Clear'; }, 2600); }
+    return;
+  }
+  inkClearAt = 0;
+  INK.redo = d.s.slice();
+  d.s = [];
+  if (btn) btn.textContent = 'Clear';
+  inkDirty();
+  inkPaintAll();
+  inkBarState();
+}
+
+function inkWire() {
+  const cv = inkCanvas();
+  if (!cv || INK.wired) return;
+  INK.wired = true;
+  cv.addEventListener('pointerdown', inkStart);
+  cv.addEventListener('pointermove', inkMove);
+  cv.addEventListener('pointerup', inkEnd);
+  cv.addEventListener('pointercancel', inkEnd);
+  cv.addEventListener('pointerleave', e => { if (INK.down) inkEnd(e); });
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  try { new ResizeObserver(() => inkPaintAll()).observe(cv); } catch (e) { window.addEventListener('resize', inkPaintAll); }
+
+  const bar = document.getElementById('inkbar');
+  if (bar) {
+    bar.addEventListener('click', e => {
+      const sw = e.target.closest('[data-inkc]');
+      const wb = e.target.closest('[data-inkw]');
+      if (sw) { INK.c = sw.dataset.inkc; INK.er = false; inkBarState(); return; }
+      if (wb) { INK.w = Number(wb.dataset.inkw) || 3; INK.er = false; inkBarState(); }
+    });
+  }
+  const er = document.getElementById('inkErase');
+  if (er) er.addEventListener('click', () => { INK.er = !INK.er; inkBarState(); });
+  const un = document.getElementById('inkUndo');
+  if (un) un.addEventListener('click', inkUndo);
+  const cl = document.getElementById('inkClear');
+  if (cl) cl.addEventListener('click', inkClear);
+}
+
+/* Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z work on the ink while the Draw pane is the one on screen. */
+document.addEventListener('keydown', e => {
+  if (document.body.dataset.mode !== 'draw') return;
+  if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return;
+  e.preventDefault();
+  if (e.shiftKey) inkRedo(); else inkUndo();
+});
+
+inkWire();
 
 </script>
 </body>
