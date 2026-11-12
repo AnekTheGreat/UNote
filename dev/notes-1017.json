@@ -1,0 +1,6 @@
+[
+  "Handwriting. A note has a Draw pane now, beside Write, Split and Read: a page you write on with a finger, a stylus or a mouse. It sits under the same title as the words, so one note can hold a shopping list and a scribbled diagram.",
+  "Seven colours and three widths, an eraser, undo and redo, and a Clear that asks twice. The first colour is the text colour itself, so a drawing is readable in the dark theme and the light one without picking a colour at all. Ctrl/Cmd+Z undoes a stroke while the Draw pane is on screen.",
+  "A stylus is treated like a pen. Pressing harder draws a thicker line, a fast line keeps every point the pen reported instead of cutting the corners, and once the stylus has been seen a finger touching the screen within a second and a half is taken for a hand resting on it and ignored. The eraser end of a stylus erases.",
+  "The ink is part of the note, not a picture beside it. It is saved the same way the words are, it travels in a backup and in a transfer code, and a note in the Vault has its ink sealed with it. A note with a drawing shows a small pen in the list and a Handwriting tag above the page."
+]
