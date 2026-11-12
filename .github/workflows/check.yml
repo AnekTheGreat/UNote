@@ -30,7 +30,43 @@ jobs:
           assert v == c == upd['version'], 'the three versions have to agree'
           PY
 
+      # The page is allowed to *mention* addresses - the update file, the privacy policy, the
+      # store listing for the other apps - because those are text and links somebody taps. What
+      # it may never do is *load* something from another origin, or call out to a server of its
+      # own. Grepping for "http" caught the first kind and failed every release, so this looks
+      # at what is actually fetched.
       - name: the page stays self-contained
         run: |
-          if grep -qE 'https?://' index.html; then echo 'the page must not call out'; exit 1; fi
-          echo 'no external requests'
+          set -euo pipefail
+          python3 - <<'PY'
+          import re, sys
+          page = open('index.html', encoding='utf-8').read()
+          bad = []
+
+          # 1. Nothing the page renders or runs may come from somewhere else.
+          loader = re.compile(r'<(script|link|img|source|video|audio|iframe|embed|object)\b[^>]*>', re.I)
+          for m in loader.finditer(page):
+              tag = m.group(0)
+              if re.search(r'\b(src|srcset|href|data|poster)\s*=\s*["\']?(https?:)?//', tag, re.I):
+                  bad.append(tag[:100])
+
+          # 2. No CSS or import pulling a font, an image or a stylesheet off the page.
+          for pattern, what in ((r'url\(\s*["\']?(https?:)?//', 'a url() from another origin'),
+                                (r'@import\s+(?:url\()?["\']?(https?:)?//', 'an @import from another origin')):
+              if re.search(pattern, page, re.I):
+                  bad.append(what)
+
+          # 3. The only requests are the app's own update check, and they only ever go to the
+          #    page's own address (OTA_HOME) or to its own updates.json.
+          for m in re.finditer(r'fetch\s*\([^;]{0,200}?\bhttps?://[^;]{0,200}?[\)\}]', page):
+              call = m.group(0)
+              if not re.search(r'OTA_HOME|updates\.json|anekthegreat\.github\.io/UNote/', call):
+                  bad.append(call[:110].replace('\n', ' '))
+
+          if bad:
+              print('the page must not load or call out to another origin:')
+              for item in bad[:10]:
+                  print('  ' + item)
+              sys.exit(1)
+          print('no external requests: nothing is loaded from another origin')
+          PY
