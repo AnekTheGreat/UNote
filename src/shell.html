@@ -20,6 +20,11 @@
     --r:18px; --r-sm:13px; --shadow:0 28px 64px rgba(0,0,0,.55);
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     --size:16px;
+    /* The screen's own margins: the status bar and notch at the top, the row of navigation
+       buttons at the bottom. They are zero on a desktop, and inside the installed app they are
+       zeroed again because the app pads the page itself - so nothing is ever counted twice. */
+    --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+    --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
   }
   [data-theme="light"]{
     --bg:#eef1f9; --panel:rgba(255,255,255,.72); --panel2:rgba(255,255,255,.66); --panel3:rgba(255,255,255,.55);
@@ -48,7 +53,10 @@ input,textarea{font:inherit;color:inherit}
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:20px;border:3px solid transparent;background-clip:content-box}
 ::-webkit-scrollbar-track{background:transparent}
 
-#app{position:relative;z-index:1;display:grid;grid-template-columns:58px 272px minmax(0,1fr) 306px;height:100dvh;min-height:0}
+#app{
+  position:relative;z-index:1;display:grid;grid-template-columns:58px 272px minmax(0,1fr) 306px;height:100dvh;min-height:0;
+  padding:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+}
 #rail{
   display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0;
   border-right:1px solid var(--line);background:linear-gradient(180deg,var(--panel),transparent 80%);
@@ -108,7 +116,7 @@ input,textarea{font:inherit;color:inherit}
 
 #main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
 #top{
-  display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:9px;padding:12px 16px;min-height:56px;border-bottom:1px solid var(--line);
   background:color-mix(in srgb,var(--panel) 72%,transparent);backdrop-filter:blur(14px);position:sticky;top:0;z-index:5;
 }
 #top .grow{flex:1}
@@ -117,7 +125,7 @@ input,textarea{font:inherit;color:inherit}
 .modes{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:2px}
 .modes button{padding:5px 11px;border-radius:8px;font-size:12px;color:var(--dim)}
 .modes button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 0 var(--line)}
-.iconbtn{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--dim);flex:none}
+.iconbtn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--dim);flex:none}
 .iconbtn:hover{background:var(--panel2);color:var(--ink)}
 .iconbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round}
 .iconbtn.on{color:var(--warn)}
@@ -213,7 +221,9 @@ body[data-mode="draw"] #inkwrap{display:flex}
 #scrim{position:fixed;inset:0;background:rgba(4,6,12,.62);backdrop-filter:blur(3px);z-index:40}
 #dlg{
   position:fixed;z-index:41;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:min(560px,calc(100vw - 28px));max-height:min(86dvh,760px);display:flex;flex-direction:column;
+  width:min(560px,calc(100vw - 28px));
+  max-height:min(calc(100dvh - var(--safe-t) - var(--safe-b) - 20px),760px);
+  display:flex;flex-direction:column;
   background:var(--panel);border:1px solid var(--line2);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;
 }
 #dlg[hidden],#scrim[hidden]{display:none}
@@ -223,7 +233,7 @@ body[data-mode="draw"] #inkwrap{display:flex}
 .dlghead h3{margin:0;font-size:15px;font-weight:650}
 .dlghead .grow{flex:1}
 .dlgbody{padding:16px 18px;overflow:auto;flex:1}
-.dlgfoot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--panel2)}
+.dlgfoot{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--panel2)}
 .dlgfoot .grow{flex:1}
 .btn{border:1px solid var(--line2);background:var(--panel2);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -271,7 +281,7 @@ body[data-mode="draw"] #inkwrap{display:flex}
 mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2px}
 
 #toast{
-  position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:60;opacity:0;pointer-events:none;
+  position:fixed;left:50%;bottom:calc(26px + var(--safe-b));transform:translate(-50%,18px);z-index:60;opacity:0;pointer-events:none;
   border:1px solid var(--line2);color:var(--ink);border-radius:12px;padding:10px 16px;font-size:12.5px;
   box-shadow:var(--shadow);transition:.22s;max-width:min(440px,88vw);text-align:center;
   backdrop-filter:blur(12px);background-color:color-mix(in srgb,var(--panel) 92%,transparent);
@@ -311,17 +321,18 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 @media (max-width:860px){
   #app{grid-template-columns:1fr}
   #rail{
-    position:fixed;bottom:0;left:0;right:0;height:58px;flex-direction:row;justify-content:space-around;
-    padding:0 6px;border-right:0;border-top:1px solid var(--line);z-index:30;
+    position:fixed;bottom:0;left:0;right:0;height:calc(58px + var(--safe-b));flex-direction:row;justify-content:space-around;
+    padding:0 6px var(--safe-b);border-right:0;border-top:1px solid var(--line);z-index:30;
     background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(14px);
   }
   .rspacer,#railLock{display:none}
   #side{
-    position:fixed;top:0;bottom:58px;left:0;width:min(300px,86vw);z-index:35;
+    position:fixed;top:var(--safe-t);bottom:calc(58px + var(--safe-b));left:0;width:min(300px,86vw);z-index:35;
     transform:translateX(-102%);transition:transform .24s cubic-bezier(.3,.9,.3,1);box-shadow:var(--shadow);
   }
   #side.open{transform:none}
-  #main{grid-column:1;padding-bottom:58px}
+  #main{grid-column:1;padding-bottom:calc(58px + var(--safe-b))}
+  #top{padding:10px 12px;min-height:54px}
   #menuBtn{display:grid}
   #doc{padding:14px 16px 0}
   #title{font-size:23px}
@@ -334,6 +345,9 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 }
 @media (max-width:520px){
   .crumbs{display:none}
+  #top{gap:6px;padding:9px 10px}
+  .iconbtn{width:34px;height:34px}
+  .modes button{padding:5px 7px;font-size:11px}
 }
   /* ---- liquid glass ---- */
   /* Every surface is a pane: a little light along the top edge, a blur of what is behind it, and the

@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
 
     private ValueCallback<Uri[]> fileCallback;
     private PermissionRequest micRequest;
+    private Insets lastBars;
 
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -96,6 +97,15 @@ public class MainActivity extends Activity {
                 }
                 return loader.shouldInterceptRequest(request.getUrl());
             }
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    // The page may load after the insets have already arrived: tell it again, so the
+                    // CSS safe-area values are never doubled on top of the padding.
+                    if (lastBars != null) {
+                        tellPageInsets();
+                    }
+                }
+
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                     Uri u = request.getUrl();
@@ -191,7 +201,9 @@ public class MainActivity extends Activity {
                 Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
                         | WindowInsetsCompat.Type.displayCutout()
                         | WindowInsetsCompat.Type.ime());
+                lastBars = bars;
                 v.setPadding(padL + bars.left, padT + bars.top, padR + bars.right, padB + bars.bottom);
+                tellPageInsets();
                 return insets;
             });
             ViewCompat.requestApplyInsets(web);
@@ -201,6 +213,21 @@ public class MainActivity extends Activity {
         } else {
             web.loadUrl(HOME);
         }
+    }
+
+    /** The bars are already added as padding around the page, so the page keeps its own CSS
+     *  safe-area values at nothing: the two must never be added on top of each other. A copy
+     *  installed from a browser has no such padding and keeps the screen's own insets. */
+    private void tellPageInsets() {
+        if (web == null) {
+            return;
+        }
+        web.evaluateJavascript(
+                "(function(){var d=document.documentElement;if(!d)return;"
+                + "d.style.setProperty('--safe-t','0px');"
+                + "d.style.setProperty('--safe-b','0px');"
+                + "d.style.setProperty('--safe-l','0px');"
+                + "d.style.setProperty('--safe-r','0px');})()", null);
     }
 
     /** The fetched page, if there is one that still looks like UNote - and only if it is newer than
@@ -243,6 +270,11 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean hasPage() {
             return otaFile != null && otaFile.isFile();
+        }
+
+        @JavascriptInterface
+        public boolean insetsPadded() {
+            return lastBars != null;
         }
 
         @JavascriptInterface

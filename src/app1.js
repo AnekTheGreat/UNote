@@ -2,7 +2,7 @@
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.19';
+const VERSION = '1.0.20';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -104,6 +104,10 @@ const S = {
   dirty: false,
 };
 
+/* A record with ciphertext in it is a Vault note, whichever list a file happened to keep it in.
+   Everything that reads or writes a backup asks this first, so a sealed note can never be left
+   sitting in the plain list - or in its Trash - where no PIN could open it. */
+const isSealed = r => !!(r && (r.vault === true || (r.iv && r.ct)));
 const allNotes = () => (S.view === 'vault' ? S.vault.plain : S.notes);
 /* The Vault is a room, not a filter: while it is closed its notes are not in hand at all. */
 function vaultList() { return (S.vault.key && S.view === 'vault') ? S.vault.plain : []; }

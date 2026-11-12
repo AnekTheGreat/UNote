@@ -1,14 +1,27 @@
 {
   "app": "UNote",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "date": "2026-11-12",
   "notes": [
-    "The version on the app and the version on the page are the same number now. It was typed twice - 1.0.16 in the build, whatever the page said in updates.json - so the APK could call itself a release the notebook had already moved past. The build reads the page's own number, and the version code is worked out from it: 1.0.19 is 1000019, and it can only go up.",
-    "The app targets Android 16 now, which is what a new listing on Play has to do from 31 August 2026. Nothing about the notebook changes because of it.",
-    "On Android 15 and later the phone draws apps behind the status bar and the row of navigation buttons, and this page was written to sit between them - so the first line of the screen and the buttons at the bottom would have slipped underneath. Where the phone insists, the heights of those two bars are added back as space, and the keyboard's height with them.",
-    "The release itself is a bundle now as well as an APK, both signed with the same upload key, both built from the same commit. Nothing to install differently: the APK is still the one for a phone."
+    "A backup is the whole notebook now. Notes, folders, tags, settings, pictures, recordings and the Vault travel together: every Vault note goes into the file sealed, with the salt and the verifier that were made from your PIN, so the PIN you already had is the PIN that opens them on the other side. Anything written while the Vault was locked went with the file too, which used to be the one thing a backup left behind.",
+    "Import puts the Vault back where it belongs. The sealed notes go into the Vault and wait there, locked, until you type the PIN they were sealed with - they no longer come back as untitled strays in the note list or in the Trash. A backup from an older version that carried its sealed records among the plain notes is sorted out on the way in, and any such strays already on the phone are moved into the Vault once, on launch.",
+    "If this phone already has a Vault of its own, with notes inside it and a different PIN, that Vault is left exactly as it was and the app says so, instead of quietly dropping the one in the backup.",
+    "The welcome sheet offers Import a backup. A new phone can be set up from the file before a single note is written - the notes arrive where they were, and the Vault is waiting behind its PIN.",
+    "The top of the page keeps clear of the status bar and the notch, and the row of buttons at the bottom keeps clear of the navigation bar, in the app and in the copy installed from the browser. The bar along the top is taller with room to tap, the sheet's buttons wrap instead of crowding, and a dialog can never grow past the screen it is on."
   ],
   "history": [
+    {
+      "version": "1.0.20",
+      "date": "2026-11-12",
+      "title": "A backup that carries the Vault, and a screen that clears the bars",
+      "notes": [
+        "A backup is the whole notebook now. Notes, folders, tags, settings, pictures, recordings and the Vault travel together: every Vault note goes into the file sealed, with the salt and the verifier that were made from your PIN, so the PIN you already had is the PIN that opens them on the other side. Anything written while the Vault was locked went with the file too, which used to be the one thing a backup left behind.",
+        "Import puts the Vault back where it belongs. The sealed notes go into the Vault and wait there, locked, until you type the PIN they were sealed with - they no longer come back as untitled strays in the note list or in the Trash. A backup from an older version that carried its sealed records among the plain notes is sorted out on the way in, and any such strays already on the phone are moved into the Vault once, on launch.",
+        "If this phone already has a Vault of its own, with notes inside it and a different PIN, that Vault is left exactly as it was and the app says so, instead of quietly dropping the one in the backup.",
+        "The welcome sheet offers Import a backup. A new phone can be set up from the file before a single note is written - the notes arrive where they were, and the Vault is waiting behind its PIN.",
+        "The top of the page keeps clear of the status bar and the notch, and the row of buttons at the bottom keeps clear of the navigation bar, in the app and in the copy installed from the browser. The bar along the top is taller with room to tap, the sheet's buttons wrap instead of crowding, and a dialog can never grow past the screen it is on."
+      ]
+    },
     {
       "version": "1.0.19",
       "date": "2026-11-12",

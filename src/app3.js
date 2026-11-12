@@ -19,6 +19,7 @@ function closeDialog() {
   $('#dlg').hidden = true;
   $('#scrim').hidden = true;
   $('#dlg').innerHTML = '';
+  importAfter = null;            // an import sheet that was closed was not an import
   if (dlgOnClose) { const f = dlgOnClose; dlgOnClose = null; f(); }
 }
 
@@ -82,27 +83,37 @@ async function onboard() {
     body: '<div style="text-align:center;padding:6px 0 2px">' +
       '<div style="font-size:30px;font-weight:700;letter-spacing:-1px">U<b style="color:var(--accent)">Note</b></div>' +
       '<div class="sub" style="color:var(--dim);font-size:13px;margin-top:6px">A notebook that stays on this phone.</div></div>' +
-      '<div class="hint" style="text-align:center;margin:18px 0 6px">Write in a note, and that is the whole app. A private Vault, behind a PIN, is there whenever you want one.</div>',
-    foot: '<div class="grow"></div><button class="btn" id="obPin">Set up the Vault</button><button class="btn primary" id="obGo">Start writing</button>',
+      '<div class="hint" style="text-align:center;margin:18px 0 6px">Write in a note, and that is the whole app. A private Vault, behind a PIN, is there whenever you want one.</div>' +
+      '<div class="hint" style="text-align:center;margin:0 0 6px">Coming from another phone? Import a backup first: everything comes across, and the Vault stays sealed with the PIN it had.</div>',
+    foot: '<div class="grow"></div><button class="btn" id="obVault">Vault</button>' +
+      '<button class="btn" id="obImport">Import a backup</button>' +
+      '<button class="btn primary" id="obGo">Start writing</button>',
   });
-  const done = () => {
-    S.settings.onboarded = true;
-    kvSet('settings', S.settings);
-    seedWelcome();
-    renderSide();
-    const first = sortNotes(liveNotes()).find(n => !n.deleted);
-    if (first) { S.current = first; renderDoc(); } else renderDoc();
-  };
-  $('#obGo', d).addEventListener('click', () => { closeDialog(); done(); });
-  $('#obPin', d).addEventListener('click', () => {
+  $('#obGo', d).addEventListener('click', () => { closeDialog(); finishOnboarding(); });
+  $('#obVault', d).addEventListener('click', () => {
     closeDialog();
     askNewPin(function afterCreate() {
-      done();
+      finishOnboarding();
       S.view = 'vault';
       renderSide();
       toast('Vault created.');
     });
   });
+  /* 1.0.20 - the welcome offers the import, so a new phone can start from the backup file before
+     anything is written here. Whatever comes in is opened afterwards, and the welcome is finished. */
+  $('#obImport', d).addEventListener('click', () => {
+    closeDialog();
+    importDialog(() => finishOnboarding());
+  });
+}
+
+function finishOnboarding() {
+  S.settings.onboarded = true;
+  kvSet('settings', S.settings);
+  seedWelcome();                       // a note list that came from a backup is left alone
+  renderSide();
+  const first = sortNotes(liveNotes()).find(n => !n.deleted);
+  if (first) { S.current = first; renderDoc(); } else renderDoc();
 }
 
 /* ---------------- PIN entry with no keyboard ---------------- */
@@ -569,6 +580,7 @@ function nativeFiles() {
 
 let pickBuf = '';
 let pickMode = 'merge';
+let importAfter = null;      // run once the import that is on screen has finished
 if (typeof window !== 'undefined') {
   window.UNotePickChunk = s => { pickBuf += s; };
   window.UNotePicked = ok => {
@@ -584,12 +596,21 @@ if (typeof window !== 'undefined') {
 async function buildBundle() {
   const meta = (await vaultMeta()) || null;
   const recs = await dbAll('notes');
+  /* 1.0.20 - the Vault is part of the backup, always: every sealed record goes in, and the salt
+     and verifier go with them so the same PIN opens them where the file is brought back. Notes
+     written while the Vault was locked wait in a holding pen, and that pen travels too - it used
+     to be the one place a backup left behind. */
+  const sealed = recs.filter(r => isSealed(r));
+  const plain = recs.filter(r => !isSealed(r)).map(r => { const n = Object.assign({}, r); delete n.vault; return n; });
+  const pend = Object.assign({}, S.vault.pending || (await kvGet('vaultpending')) || {});
+  const vault = { on: !!(meta && meta.on), notes: sealed, pending: pend };
+  if (meta && meta.on) { vault.salt = meta.salt; vault.iter = meta.iter; vault.verifier = meta.verifier; }
   return {
     app: APP, kind: 'backup', version: VERSION, at: new Date().toISOString(),
     settings: { theme: S.settings.theme, accent: S.settings.accent, size: S.settings.size, mode: S.settings.mode, autolock: S.settings.autolock, sort: S.settings.sort },
-    notes: recs.filter(r => !r.vault),
+    notes: plain,
     media: await bundleMedia(),
-    vault: meta && meta.on ? { on: true, salt: meta.salt, iter: meta.iter, verifier: meta.verifier, notes: recs.filter(r => r.vault) } : { on: false },
+    vault: vault,
   };
 }
 
@@ -607,8 +628,9 @@ async function exportAll() {
     const bundle = await buildBundle();
     const name = 'unote-' + dayKey() + '.unote.json';
     const json = JSON.stringify(bundle, null, 1);
+    const sealedCount = (bundle.vault && bundle.vault.notes) ? bundle.vault.notes.length : 0;
     const msg = bundle.notes.length + ' note' + (bundle.notes.length === 1 ? '' : 's') +
-      (bundle.vault.on ? ' + ' + bundle.vault.notes.length + ' sealed in the Vault' : '');
+      (sealedCount ? ' + ' + sealedCount + ' sealed in the Vault' : '');
     const nf = nativeFiles();
     if (nf) {
       nf.saveBackup(name, json);
@@ -683,7 +705,8 @@ async function transferDialog() {
   $('#trFile', d).addEventListener('click', () => { closeDialog(); exportAll(); });
 }
 
-async function importDialog() {
+async function importDialog(then) {
+  importAfter = then || null;       // the welcome uses this to finish once the file is in
   const d = dialog({
     cls: 'wide',
     title: 'Import a backup',
@@ -693,6 +716,7 @@ async function importDialog() {
       '<div class="rowset"><span class="grow">How to bring it in</span><div class="seg" id="impMode">' +
       '<button data-m="merge" class="on">Merge</button><button data-m="replace">Replace everything</button></div></div>' +
       '<div class="hint">Merge keeps what is here and adds anything newer from the backup. Replace clears this device first.</div>' +
+      '<div class="hint">A Vault in the backup comes across sealed: its notes wait inside the Vault, and the PIN they were sealed with opens them here.</div>' +
       '<input type="file" id="impFile" accept="*/*" hidden>',
     foot: '<div class="grow"></div><button class="btn primary" id="impGo">Import</button>',
   });
@@ -723,6 +747,8 @@ async function importDialog() {
 }
 
 async function runImport(text, mode) {
+  const after = importAfter;            // the welcome's hand-off, used once at the very end
+  importAfter = null;
   let bundle;
   try {
     let raw = String(text || '').trim();
@@ -730,34 +756,81 @@ async function runImport(text, mode) {
     if (/^UNOTE1:/i.test(raw)) raw = await unpack(raw);
     bundle = JSON.parse(raw);
     if (bundle.app !== APP || !Array.isArray(bundle.notes)) throw new Error('That is not a UNote backup');
-  } catch (e) { toast('Could not read that: ' + e.message, 4000); return; }
+  } catch (e) {
+    /* A file that cannot be read leaves everything as it was, and the sheet open, so another one
+       can be picked without losing the place the import was started from. */
+    importAfter = after;
+    toast('Could not read that: ' + e.message, 4000);
+    return;
+  }
+
+  /* 1.0.20 - anything sealed is a Vault note, whichever list the file kept it in. Backups from
+     earlier versions carried the Vault's sealed records among the plain notes, and those were the
+     notes that came back as untitled strays - some of them in the Trash - with no PIN anywhere
+     that could open them. They are sorted out here, before a single record is written. */
+  const sealed = [];
+  const keepSealed = r => {
+    if (!r || !r.id || !isSealed(r)) return;
+    if (sealed.some(x => x.id === r.id)) return;
+    sealed.push(Object.assign({}, r, { vault: true }));
+  };
+  (bundle.notes || []).forEach(keepSealed);
+  ((bundle.vault && bundle.vault.notes) || []).forEach(keepSealed);
+  const plain = (bundle.notes || [])
+    .filter(n => n && n.id && !isSealed(n))
+    .map(n => { const copy = Object.assign({}, n); delete copy.vault; return copy; });   // a plain note is never sealed
 
   let added = 0, updated = 0;
   if (mode === 'replace') {
-    for (const n of S.notes) await dbDel('notes', n.id);
-    for (const r of S.vault.notes) await dbDel('notes', r.id);
+    for (const r of await dbAll('notes')) await dbDel('notes', r.id);
     S.notes = []; S.vault.notes = []; S.vault.plain = [];
+    S.current = null;
   }
-  for (const n of bundle.notes) {
+  for (const n of plain) {
     const old = S.notes.find(x => x.id === n.id);
     if (old && (old.updated || 0) >= (n.updated || 0)) continue;
     if (old) updated++; else added++;
     await dbPut('notes', n);
   }
-  S.notes = (await dbAll('notes')).filter(r => !r.vault);
+  S.notes = (await dbAll('notes')).filter(r => !isSealed(r));
 
-  if (bundle.vault && bundle.vault.on) {
+  /* The Vault travels with the salt and the verifier it was sealed under, so the PIN it had is
+     the PIN that opens it here - the notes wait inside the Vault, locked, exactly as they were.
+     It is only kept out when this phone already has a Vault of its own, with a different PIN and
+     notes inside it: then nothing on either side is thrown away. */
+  let vaultIn = 0, vaultKept = false;
+  if (sealed.length) {
     const meta = await vaultMeta();
-    if (!meta || !meta.on) {
-      await kvSet('vault', { on: true, salt: bundle.vault.salt, iter: bundle.vault.iter || KDF_ITER, verifier: bundle.vault.verifier });
-      for (const r of bundle.vault.notes || []) await dbPut('notes', r);
-      S.vault.key = null;
-    } else if (JSON.stringify(meta.verifier) === JSON.stringify(bundle.vault.verifier)) {
-      for (const r of bundle.vault.notes || []) await dbPut('notes', r);
+    const same = !!(meta && meta.on && bundle.vault && bundle.vault.verifier &&
+      JSON.stringify(meta.verifier) === JSON.stringify(bundle.vault.verifier));
+    const mine = (await dbAll('notes')).filter(r => isSealed(r)).length;
+    const adopt = same || !meta || !meta.on || !mine;
+    if (adopt) {
+      if (!same && bundle.vault && bundle.vault.salt && bundle.vault.verifier) {
+        S.vault.salt = bundle.vault.salt;
+        S.vault.verifier = bundle.vault.verifier;
+        S.vault.key = null;             // it is locked again until that PIN is typed
+        await kvSet('vault', { on: true, salt: bundle.vault.salt, iter: bundle.vault.iter || KDF_ITER, verifier: bundle.vault.verifier });
+      }
+      for (const r of sealed) {
+        const have = await req(store('notes').get(r.id));
+        if (have && (have.updated || 0) > (r.updated || 0)) { vaultIn++; continue; }
+        await dbPut('notes', r);
+        vaultIn++;
+      }
     } else {
-      toast('Vault skipped: the backup was sealed with a different PIN.', 4600);
+      vaultKept = true;
     }
   }
+
+  /* Anything written while the Vault was locked waits in the holding pen, and comes in with the
+     rest of the backup so a backup is never missing the last thing somebody typed. */
+  const pend = (bundle.vault && bundle.vault.pending) ? bundle.vault.pending : null;
+  if (pend && Object.keys(pend).length) {
+    S.vault.pending = Object.assign({}, pend, S.vault.pending || {});
+    await kvSet('vaultpending', S.vault.pending).catch(() => {});
+  }
+
   if (bundle.media && bundle.media.length) await pullInMedia(bundle.media);
   if (bundle.settings) {
     Object.assign(S.settings, bundle.settings);
@@ -765,12 +838,27 @@ async function runImport(text, mode) {
     setTheme(S.settings.theme); setAccent(S.settings.accent);
     document.documentElement.style.setProperty('--size', (S.settings.size || 16) + 'px');
   }
+  const meta2 = await vaultMeta();
+  S.vault.on = !!(meta2 && meta2.on);
   if (S.vault.key) await decryptVault();
+  else { S.vault.notes = (await dbAll('notes')).filter(r => isSealed(r)); S.vault.plain = []; }
+  if (!S.current) {
+    const first = sortNotes(liveNotes()).find(n => !n.deleted);   // something to open, never a blank page
+    if (first) S.current = first;
+  }
   closeDialog();
   renderSide(); renderDoc();
   let tail = '';
-  if (bundle.vault && bundle.vault.on) tail = ' The Vault came across sealed: it opens with the PIN it was sealed with, or you can reset it and start empty.';
-  toast('Imported: ' + added + ' new, ' + updated + ' updated.' + tail, 5200);
+  if (vaultIn) {
+    tail = S.vault.key
+      ? ' ' + vaultIn + ' Vault note' + (vaultIn === 1 ? '' : 's') + ' came across and opened with this phone\'s PIN.'
+      : ' ' + vaultIn + ' Vault note' + (vaultIn === 1 ? ' is' : 's are') + ' waiting in the Vault - the PIN they were sealed with opens them.';
+  }
+  if (vaultKept) {
+    tail += ' The Vault in that backup is sealed with a different PIN, and this phone already has a Vault with notes in it, so it was left as it was: reset the Vault first if you would rather have the backup\'s.';
+  }
+  toast('Imported: ' + added + ' new, ' + updated + ' updated.' + tail, (vaultIn || vaultKept) ? 7600 : 5200);
+  if (after) after();
 }
 
 /* ---------------- updates (over the air) ---------------- */
@@ -1055,6 +1143,17 @@ async function boot() {
   const meta = await vaultMeta();
   if (meta && meta.on) { S.vault.on = true; S.vault.salt = meta.salt; S.vault.verifier = meta.verifier; }
 
+  /* 1.0.20 - the CSS safe-area values are the screen's own margins. Inside the installed app the
+     padding is on the page's frame instead (MainActivity sets these to nothing once it has done
+     that), so the status bar is cleared once, not twice. */
+  (function () {
+    const nf = nativeFiles();
+    if (nf && typeof nf.insetsPadded === 'function' && nf.insetsPadded()) {
+      ['--safe-t', '--safe-b', '--safe-l', '--safe-r'].forEach(v =>
+        document.documentElement.style.setProperty(v, '0px'));
+    }
+  })();
+
   document.documentElement.dataset.theme = S.settings.theme || 'dark';
   setAccent(S.settings.accent || '#7c5cff');
   document.documentElement.style.setProperty('--size', (S.settings.size || 16) + 'px');
@@ -1062,8 +1161,11 @@ async function boot() {
   $('#sVer').textContent = 'UNote ' + VERSION;
 
   const recs = await dbAll('notes');
-  S.notes = recs.filter(r => !r.vault);
-  S.vault.notes = recs.filter(r => r.vault);
+  /* A sealed record is a Vault note even when an older import forgot to say so. It is marked here
+     once, so a stray sealed note can never sit in the plain list - or in its Trash - again. */
+  for (const r of recs) if (isSealed(r) && r.vault !== true) { r.vault = true; await dbPut('notes', r); }
+  S.notes = recs.filter(r => !isSealed(r));
+  S.vault.notes = recs.filter(r => isSealed(r));
   S.vault.plain = [];
 
   renderSide();
