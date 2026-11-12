@@ -295,9 +295,16 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 }
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
-#graphwrap{position:fixed;inset:0;z-index:41;display:flex;flex-direction:column;background:color-mix(in srgb,var(--bg) 96%,transparent);backdrop-filter:blur(6px)}
+/* 1.0.24 - the graph covers the whole screen, so it used to start at the very top of it and put
+   its own header under the clock. It keeps clear of the phone's bars like every other surface. */
+#graphwrap{
+  position:fixed;inset:0;z-index:41;display:flex;flex-direction:column;
+  background:color-mix(in srgb,var(--bg) 96%,transparent);backdrop-filter:blur(6px);
+  padding:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+}
 #graphwrap[hidden]{display:none}
-#graphbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px}
+#graphbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;min-height:56px;flex-wrap:wrap}
+#graphbar strong{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #graphbar .grow{flex:1}
 #graph{flex:1;display:block;width:100%;height:100%;cursor:grab;touch-action:none}
 #graph.drag{cursor:grabbing}
@@ -692,7 +699,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.23';
+const VERSION = '1.0.24';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
