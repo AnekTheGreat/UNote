@@ -463,6 +463,7 @@ function settingsDialog() {
 
       '<div class="setsec"><h4>About</h4><div class="sub">UNote - a notebook that links itself, with a vault that asks for a PIN. Made to be used for everything.</div>' +
               '<button class="listrow" data-apps="1" style="margin-top:10px"><span class="grow"><span class="lr-t">Other apps</span><span class="lr-s">FamTM, SideCut, MeasureT, My Hub and UJournal - the rest of the shelf.</span></span><span class="chev">›</span></button>' +
+              '<a class="listrow" href="https://anekthegreat.github.io/UNote/privacy.html" target="_blank" rel="noopener" style="margin-top:8px;text-decoration:none"><span class="grow"><span class="lr-t">Privacy policy</span><span class="lr-s">What stays on this phone, and the one request the app makes.</span></span><span class="chev">›</span></a>' +
         '<div class="hint" style="margin:0">Version ' + VERSION + ' · ' + APP + ' · works offline · no account, no tracking, no server.</div></div>',
   });
   $('#setTheme', dlg).addEventListener('click', e => {

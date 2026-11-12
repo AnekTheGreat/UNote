@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNote — Privacy Policy</title>
+<meta name="description" content="Privacy policy for the UNote Android app: your notes stay on your phone, the Vault is encrypted with your PIN, and nothing is sent to us.">
+<style>
+  :root { --ink:#11161d; --muted:#5d6774; --paper:#f8f9fb; --rule:#e2e6ec; --accent:#6d4bdb; --card:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#e9edf3; --muted:#a2acba; --paper:#11151b; --rule:#2a323d; --accent:#b3a1ff; --card:#181e26; } }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; padding:3rem 1.25rem 5rem; background:var(--paper); color:var(--ink); font:17px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  main { max-width:44rem; margin:0 auto; }
+  header { border-bottom:1px solid var(--rule); padding-bottom:1.25rem; margin-bottom:2rem; }
+  h1 { font-size:1.9rem; line-height:1.2; margin:0 0 .5rem; letter-spacing:-.01em; }
+  h2 { font-size:1.15rem; margin:2.5rem 0 .6rem; }
+  h3 { font-size:1rem; margin:1.5rem 0 .3rem; }
+  p, li { margin:0 0 .85rem; }
+  ul { padding-left:1.25rem; }
+  li { margin-bottom:.5rem; }
+  .sub { color:var(--muted); font-size:.95rem; margin:0; }
+  .lede { background:var(--card); border:1px solid var(--rule); border-radius:10px; padding:1.1rem 1.25rem; margin:0 0 2rem; }
+  .lede p:last-child { margin-bottom:0; }
+  a { color:var(--accent); }
+  code { font-size:.9em; background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:.05em .3em; }
+  footer { margin-top:3rem; padding-top:1.25rem; border-top:1px solid var(--rule); color:var(--muted); font-size:.9rem; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>UNote — Privacy Policy</h1>
+  <p class="sub">Applies to UNote for Android, package <code>app.unote</code>, version 1.0.18 and later. Effective 12 November 2026.</p>
+</header>
+
+<div class="lede">
+  <p><strong>The short version: UNote has no account, no analytics, no advertising and no server that holds your notes. What you write, photograph, record or draw stays in the app's own storage on your phone. A note in the Vault is encrypted on the phone with a key made from your PIN, so it cannot be read without you.</strong></p>
+  <p>The only thing the app asks for from outside is a newer copy of its own interface, from this project's GitHub Pages site. That request carries nothing from your notes.</p>
+</div>
+
+<h2>Who we are</h2>
+<p>UNote is an independent Android app. In this policy, “we” and “us” mean the app's developer, and “the app” means UNote. You can reach us at the address in <a href="#contact">Contact</a>.</p>
+
+<h2>What the app keeps on your phone</h2>
+<p>Everything you put into UNote is written to the app's own private storage on the device — the browser-style database a WebView app is given, which other apps cannot read. That includes:</p>
+<ul>
+  <li>the notes themselves: title, text, folder, tags, favourite mark, and the dates the app records for them;</li>
+  <li>any drawing you make in the Draw pane, kept inside the note it belongs to;</li>
+  <li>pictures, videos and voice memos you attach to a note, scaled down where it is a picture, stored with that note;</li>
+  <li>your settings: theme, accent colour, text size, and how the app was last laid out.</li>
+</ul>
+<p>None of it is uploaded anywhere. There is no account to sign in to, and no copy of your notes is held by us or by anyone else on our behalf.</p>
+
+<h2>The Vault</h2>
+<p>A note can be moved into the Vault, which is a section of the app that asks for a PIN. A note in the Vault is encrypted on the phone before it is written to storage, with AES-256-GCM, using a key derived from your PIN with PBKDF2-SHA256 and a random salt. The PIN itself is never stored — only a verifier that lets the app tell a right PIN from a wrong one.</p>
+<p>What that means in practice: without the PIN the sealed notes are unreadable, including to us, and including to anyone who copies the app's storage off the phone. It also means a forgotten PIN cannot be reset by anyone — the notes sealed under it stay sealed. The app says so before you set one.</p>
+<p>Pictures and recordings attached to a Vault note are encrypted with the same key.</p>
+
+<h2>Pictures, videos and voice memos</h2>
+<p>Attachments are always your choice. A picture or a video is picked with Android's own file or photo picker, or taken with the phone's camera app; UNote never opens the camera itself and asks for no camera permission. A voice memo is recorded inside the note, and the microphone is used only while you are recording one — the recording stops when you stop it, and the audio is written to the note and nowhere else.</p>
+
+<h2>Backups and transfer codes</h2>
+<p>The app can write a backup as a JSON file, or a transfer code you can paste into another install. Both are made only when you ask for them, and both go exactly where you send them — a folder you pick, a message, a cloud drive. A backup is not encrypted unless the notes in it are Vault notes, so treat a backup file as you would the notes themselves.</p>
+
+<h2>What leaves the phone</h2>
+<p>One request, and only one: on launch, and when you tap <em>Check now</em>, the app asks this project's GitHub Pages site (<code>anekthegreat.github.io/UNote</code>) whether there is a newer copy of its interface, and downloads it if there is. That page is what draws the app, so a correction can reach your phone without an app-store update.</p>
+<p>Like any web request, GitHub receives your IP address and standard request headers, and handles them under <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>. The request carries no identifier for you, your phone or your installation, and nothing from your notes, pictures or recordings. The app works without a connection; it simply keeps the copy it already has.</p>
+<p>Links in the app — the other apps made alongside this one, and this policy — open in the phone's own browser or the Play Store. Those sites have their own policies.</p>
+
+<h2>What we never do</h2>
+<ul>
+  <li>No account, no sign-in, no email address required.</li>
+  <li>No analytics, no crash reporting, no usage statistics, no advertising, no third-party tracking or advertising libraries.</li>
+  <li>We do not read, collect, sell, rent or share your notes, pictures, recordings or drawings.</li>
+  <li>No background collection: the app does nothing at all while it is closed.</li>
+</ul>
+
+<h2>Keeping and deleting your data</h2>
+<p>Your notes are yours to remove, and every way of removing them is in the app:</p>
+<ul>
+  <li>delete a single note, which moves it to Trash;</li>
+  <li>empty the Trash, which removes those notes for good;</li>
+  <li><em>Delete everything</em> in Settings, which clears the notes, the folders and the Vault from this device;</li>
+  <li>or uninstall the app, which deletes its private storage — every note, picture, recording, drawing and the update it downloaded — with it.</li>
+</ul>
+<p>Nothing is kept anywhere else for us to delete, because nothing was ever sent anywhere else. A backup file you made is the one copy outside the app, and it lives wherever you put it; delete it there.</p>
+
+<h2>Children</h2>
+<p>UNote is a general-purpose notebook and is not directed at children. It collects no personal data from anyone, of any age. It does store whatever you type into it, so treat a shared phone the way you would a shared notebook.</p>
+
+<h2>Changes to this policy</h2>
+<p>If a future version of the app changes what it does with data, this page will be updated before that version is published, and the effective date above will change. The current version of this policy always lives at this address.</p>
+
+<h2 id="contact">Contact</h2>
+<p>Questions about this policy, or about what the app does with your notes, can go to <a href="mailto:sidecutsupport@gmail.com">sidecutsupport@gmail.com</a>, or to the issue tracker at <a href="https://github.com/AnekTheGreat/UNote/issues">github.com/AnekTheGreat/UNote</a>.</p>
+
+<footer>
+  <p>UNote — package <code>app.unote</code>. This policy covers the Android app wherever you installed it from.</p>
+</footer>
+
+</main>
+</body>
+</html>

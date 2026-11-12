@@ -1,14 +1,23 @@
 {
   "app": "UNote",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "date": "2026-11-12",
   "notes": [
-    "Handwriting. A note has a Draw pane now, beside Write, Split and Read: a page you write on with a finger, a stylus or a mouse. It sits under the same title as the words, so one note can hold a shopping list and a scribbled diagram.",
-    "Seven colours and three widths, an eraser, undo and redo, and a Clear that asks twice. The first colour is the text colour itself, so a drawing is readable in the dark theme and the light one without picking a colour at all. Ctrl/Cmd+Z undoes a stroke while the Draw pane is on screen.",
-    "A stylus is treated like a pen. Pressing harder draws a thicker line, a fast line keeps every point the pen reported instead of cutting the corners, and once the stylus has been seen a finger touching the screen within a second and a half is taken for a hand resting on it and ignored. The eraser end of a stylus erases.",
-    "The ink is part of the note, not a picture beside it. It is saved the same way the words are, it travels in a backup and in a transfer code, and a note in the Vault has its ink sealed with it. A note with a drawing shows a small pen in the list and a Handwriting tag above the page."
+    "UNote has a privacy policy. It lives at anekthegreat.github.io/UNote/privacy.html and is linked from Settings, under About, so what the app keeps and what it does with it is one tap from inside the app rather than a page you have to be told about.",
+    "It says what is true of this app in plain words: your notes, drawings, pictures and recordings are kept in the app's own storage on the phone; a Vault note is encrypted on the phone with a key made from your PIN, with nothing of the PIN stored; backups and transfer codes are made only when you ask and go only where you send them.",
+    "It also names the one thing that leaves the phone - the check for a newer copy of the app's own interface, from this project's GitHub Pages site - and what GitHub sees when that happens. There is no account, no analytics, no advertising and no third-party library in the app, and the page says so."
   ],
   "history": [
+    {
+      "version": "1.0.18",
+      "date": "2026-11-12",
+      "title": "A privacy policy of its own, linked from Settings",
+      "notes": [
+        "UNote has a privacy policy. It lives at anekthegreat.github.io/UNote/privacy.html and is linked from Settings, under About, so what the app keeps and what it does with it is one tap from inside the app rather than a page you have to be told about.",
+        "It says what is true of this app in plain words: your notes, drawings, pictures and recordings are kept in the app's own storage on the phone; a Vault note is encrypted on the phone with a key made from your PIN, with nothing of the PIN stored; backups and transfer codes are made only when you ask and go only where you send them.",
+        "It also names the one thing that leaves the phone - the check for a newer copy of the app's own interface, from this project's GitHub Pages site - and what GitHub sees when that happens. There is no account, no analytics, no advertising and no third-party library in the app, and the page says so."
+      ]
+    },
     {
       "version": "1.0.17",
       "date": "2026-11-12",
