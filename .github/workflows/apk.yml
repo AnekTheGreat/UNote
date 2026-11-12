@@ -77,6 +77,13 @@ jobs:
           cp "$out" UNote.apk
           ls -l UNote.apk
           sha256sum UNote.apk > UNote.apk.sha256
+          # The same build as a bundle, for Play: one artifact, two shapes, the same key.
+          gradle -p android --no-daemon bundleRelease
+          bundle=$(find android/app/build/outputs/bundle/release -name '*.aab' | head -1)
+          test -n "$bundle"
+          cp "$bundle" UNote.aab
+          ls -l UNote.aab
+          sha256sum UNote.aab > UNote.aab.sha256
 
       - name: Which key signed it
         run: |
@@ -85,6 +92,10 @@ jobs:
           if [ -n "$apksigner" ]; then
             "$apksigner" verify --print-certs UNote.apk | head -4 || true
           fi
+          jarsigner=$(command -v jarsigner || true)
+          if [ -n "$jarsigner" ]; then
+            jarsigner -verify -verbose:summary UNote.aab 2>&1 | tail -3 || true
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -92,6 +103,13 @@ jobs:
           path: |
             UNote.apk
             UNote.apk.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UNote-aab
+          path: |
+            UNote.aab
+            UNote.aab.sha256
 
       - name: Publish the download
         uses: softprops/action-gh-release@v2
@@ -103,8 +121,12 @@ jobs:
             works with no signal, and the notebook is that app's own - separate from
             the copy in a browser.
 
+            UNote.aab is the same build as a bundle, for an app store listing.
+
             Version and what changed: see updates.json in the repository.
           files: |
             UNote.apk
             UNote.apk.sha256
+            UNote.aab
+            UNote.aab.sha256
           make_latest: true
