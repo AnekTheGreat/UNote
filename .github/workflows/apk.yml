@@ -37,7 +37,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          gradle-version: '8.13'
 
       - name: The upload keystore
         if: env.HAS_KEYSTORE == 'true'
@@ -85,7 +85,7 @@ jobs:
           ls -l UNote.aab
           sha256sum UNote.aab > UNote.aab.sha256
 
-      - name: Which key signed it
+      - name: Which key signed it, and what the bundle says about itself
         run: |
           set -euo pipefail
           apksigner=$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -name apksigner 2>/dev/null | sort | tail -1)
@@ -95,6 +95,11 @@ jobs:
           jarsigner=$(command -v jarsigner || true)
           if [ -n "$jarsigner" ]; then
             jarsigner -verify -verbose:summary UNote.aab 2>&1 | tail -3 || true
+          fi
+          # The two numbers a store reads first: the version it is told and the SDK it targets.
+          aapt2=$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -name aapt2 2>/dev/null | sort | tail -1)
+          if [ -n "$aapt2" ]; then
+            "$aapt2" dump badging UNote.apk | grep -E "^(package|targetSdkVersion|sdkVersion)" || true
           fi
 
       - uses: actions/upload-artifact@v4
