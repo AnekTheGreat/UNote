@@ -21,7 +21,10 @@ android {
 
     defaultConfig {
         applicationId 'app.unote'
-        minSdk 23
+        // 24, not 23: Play's automatic protection refuses a bundle whose minimum is below 24,
+        // which is the first thing it said about this one. Android 7.0 and later still covers
+        // every phone this notebook was written for.
+        minSdk 24
         // 36 is what a new listing on Play has to target from 31 August 2026.
         targetSdk 36
         // Three digits a part, so 1.0.19 is 1000019 and the code only ever goes up.
