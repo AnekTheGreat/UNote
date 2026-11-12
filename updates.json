@@ -1,13 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "date": "2026-11-12",
   "notes": [
-    "UNote has a privacy policy. It lives at anekthegreat.github.io/UNote/privacy.html and is linked from Settings, under About, so what the app keeps and what it does with it is one tap from inside the app rather than a page you have to be told about.",
-    "It says what is true of this app in plain words: your notes, drawings, pictures and recordings are kept in the app's own storage on the phone; a Vault note is encrypted on the phone with a key made from your PIN, with nothing of the PIN stored; backups and transfer codes are made only when you ask and go only where you send them.",
-    "It also names the one thing that leaves the phone - the check for a newer copy of the app's own interface, from this project's GitHub Pages site - and what GitHub sees when that happens. There is no account, no analytics, no advertising and no third-party library in the app, and the page says so."
+    "The version on the app and the version on the page are the same number now. It was typed twice - 1.0.16 in the build, whatever the page said in updates.json - so the APK could call itself a release the notebook had already moved past. The build reads the page's own number, and the version code is worked out from it: 1.0.19 is 1000019, and it can only go up.",
+    "The app targets Android 16 now, which is what a new listing on Play has to do from 31 August 2026. Nothing about the notebook changes because of it.",
+    "On Android 15 and later the phone draws apps behind the status bar and the row of navigation buttons, and this page was written to sit between them - so the first line of the screen and the buttons at the bottom would have slipped underneath. Where the phone insists, the heights of those two bars are added back as space, and the keyboard's height with them.",
+    "The release itself is a bundle now as well as an APK, both signed with the same upload key, both built from the same commit. Nothing to install differently: the APK is still the one for a phone."
   ],
   "history": [
+    {
+      "version": "1.0.19",
+      "date": "2026-11-12",
+      "title": "A build a store will take, and the bars back in place",
+      "notes": [
+        "The version on the app and the version on the page are the same number now. It was typed twice - 1.0.16 in the build, whatever the page said in updates.json - so the APK could call itself a release the notebook had already moved past. The build reads the page's own number, and the version code is worked out from it: 1.0.19 is 1000019, and it can only go up.",
+        "The app targets Android 16 now, which is what a new listing on Play has to do from 31 August 2026. Nothing about the notebook changes because of it.",
+        "On Android 15 and later the phone draws apps behind the status bar and the row of navigation buttons, and this page was written to sit between them - so the first line of the screen and the buttons at the bottom would have slipped underneath. Where the phone insists, the heights of those two bars are added back as space, and the keyboard's height with them.",
+        "The release itself is a bundle now as well as an APK, both signed with the same upload key, both built from the same commit. Nothing to install differently: the APK is still the one for a phone."
+      ]
+    },
     {
       "version": "1.0.18",
       "date": "2026-11-12",

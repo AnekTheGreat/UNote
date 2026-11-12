@@ -10,6 +10,7 @@ import android.webkit.WebChromeClient;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -17,6 +18,9 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 
@@ -174,6 +178,24 @@ public class MainActivity extends Activity {
 
 
         setContentView(web);
+
+        // Android 15 draws every app targeting 35 or later behind the status bar and the row of
+        // navigation buttons, and this page was written to sit between them. Where the phone
+        // insists, the heights of those bars go back on as padding - the layout every earlier
+        // version had - and the keyboard's height is included, so the bottom of the page still
+        // rises above it while it is open.
+        if (Build.VERSION.SDK_INT >= 35) {
+            final int padL = web.getPaddingLeft(), padT = web.getPaddingTop();
+            final int padR = web.getPaddingRight(), padB = web.getPaddingBottom();
+            ViewCompat.setOnApplyWindowInsetsListener(web, (v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                        | WindowInsetsCompat.Type.displayCutout()
+                        | WindowInsetsCompat.Type.ime());
+                v.setPadding(padL + bars.left, padT + bars.top, padR + bars.right, padB + bars.bottom);
+                return insets;
+            });
+            ViewCompat.requestApplyInsets(web);
+        }
         if (state != null) {
             web.restoreState(state);
         } else {

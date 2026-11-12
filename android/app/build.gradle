@@ -4,7 +4,9 @@ plugins {
     id 'com.android.application'
 }
 
-def appVersion = '1.0.16'
+// Read from the page's own updates.json: a release number typed twice is a release number
+// that drifts, and this one had (the build said 1.0.16 while the page said 1.0.18).
+def appVersion = new groovy.json.JsonSlurper().parseText(rootProject.file('../updates.json').text).version
 
 // android/keystore.properties exists only in CI, written from repository secrets.
 def ks = new Properties()
@@ -15,13 +17,15 @@ if (ksFile.exists()) {
 
 android {
     namespace 'app.unote'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId 'app.unote'
         minSdk 23
-        targetSdk 34
-        versionCode 1016
+        // 36 is what a new listing on Play has to target from 31 August 2026.
+        targetSdk 36
+        // Three digits a part, so 1.0.19 is 1000019 and the code only ever goes up.
+        versionCode appVersion.tokenize('.').collect { it.padLeft(3, '0') }.join('').toInteger()
         versionName appVersion
     }
 
@@ -63,6 +67,9 @@ dependencies {
     // Only for WebViewAssetLoader, which serves the bundled page from a real https
     // origin: IndexedDB and service workers are refused on file:// URLs.
     implementation 'androidx.webkit:webkit:1.11.0'
+    // For the window insets on Android 15 and later, where the page would otherwise draw
+    // under the status bar.
+    implementation 'androidx.core:core:1.13.1'
 }
 
 // The page in the repository is the only copy: copy it into the APK at build time
