@@ -1364,6 +1364,8 @@ function applySafeInsets() {
   document.body.classList.toggle('kb-native', keys);
   if (keys) d.setProperty('--kb', bottom + 'px');
   else if (d.getPropertyValue('--kb') === bottom + 'px') d.removeProperty('--kb');
+  /* 1.0.33 - and the line being typed is moved up into the room, not just left above the keys. */
+  if (keys) setTimeout(keepCaretVisible, 30);
   d.setProperty('--safe-l', num(nf.safeLeft) + 'px');
   d.setProperty('--safe-r', num(nf.safeRight) + 'px');
 }
@@ -1412,6 +1414,18 @@ function keepCaretVisible() {
 }
 function watchKeyboard() {
   const vv = window.visualViewport;
+  /* 1.0.33 - the line you are on is kept in sight while you type it, the way the journal does it:
+     whichever way the keys arrive - visualViewport in a browser, the app shortening the WebView on
+     Android 15 - every keystroke and every move of the caret scrolls the note so that line sits a
+     couple of lines above the bottom, with the air from the stylesheet under it. Relying on the
+     phone to do it only ever brought the line to the very edge. */
+  const nudge = () => { const a = document.activeElement; if (a && a.id === 'ed') keepCaretVisible(); };
+  if (!watchKeyboard.wired) {
+    watchKeyboard.wired = 1;
+    document.addEventListener('input', e => { if (e.target && e.target.id === 'ed') keepCaretVisible(); }, true);
+    document.addEventListener('selectionchange', nudge);
+    document.addEventListener('keyup', nudge);
+  }
   if (!vv) return;
   const root = document.documentElement;
   const apply = () => {

@@ -1,13 +1,18 @@
 {
   "app": "UNote",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "date": "2026-11-13",
   "notes": [
-    "Reminders. The bell in the rail - and a line on the page the app opens on - holds a list you write in: a reminder is a line of text and a time, and the phone rings it as a notification, with UNote shut and again after a restart. The app asks once for the permission to notify.",
-    "Room to write. A note ends with real space under its last line now, and while the keyboard is up it keeps a clear band of that space, so the line you are typing sits above the keys instead of against them.",
-    "Other apps go where each app really is. SideCut opens its Google Play page; the four that are not in the store open their own download page, and the card says which one it is doing."
+    "The line you are typing is kept in sight the way UJournal does it. The phone only ever brought it to the very edge of the keyboard; now every keystroke and every move of the caret scrolls the note so that line sits a couple of lines up, with the air under it, whether the keys arrive as a shorter page in the app or as visualViewport in a browser."
   ],
   "history": [
+    {
+      "version": "1.0.33",
+      "date": "2026-11-13",
+      "notes": [
+        "The line you are typing is kept in sight the way UJournal does it. The phone only ever brought it to the very edge of the keyboard; now every keystroke and every move of the caret scrolls the note so that line sits a couple of lines up, with the air under it, whether the keys arrive as a shorter page in the app or as visualViewport in a browser."
+      ]
+    },
     {
       "version": "1.0.32",
       "date": "2026-11-13",
