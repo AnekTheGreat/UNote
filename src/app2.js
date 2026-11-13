@@ -113,6 +113,10 @@ function backTarget() {
   if (S.selMode) return 'select';
   const side = $('#side');
   if (side && side.classList.contains('open')) return 'side';
+  /* 1.0.25 - a note is somewhere you went, so back leaves it for the page before it. Clearing a
+     folder filter from inside a note changed nothing anyone could see, and with no filter at all
+     there was nothing to go back to and the system took the press as "close the app". */
+  if (S.current) return 'note';
   if (S.folder || S.tag) return 'filter';
   if (S.view && S.view !== 'notes') return 'view';
   return '';
@@ -130,6 +134,7 @@ function goBack() {
   else if (t === 'dialog') closeDialog();
   else if (t === 'select') selExit();
   else if (t === 'side') closeSide();
+  else if (t === 'note') { S.current = null; renderDoc(); renderSide(); }
   else {
     if (S.vault.key) lockVault(true);
     S.view = 'notes'; S.folder = ''; S.tag = '';
@@ -145,6 +150,7 @@ function renderDoc() {
   const doc = $('#doc'), empty = $('#empty');
   if (!n) {
     doc.hidden = true; empty.hidden = false;
+    document.body.classList.add('nonote');   // the note's own controls have nothing to act on here
     $('#pv').innerHTML = '';
     $('#crumbs').innerHTML = '<b>UNote</b>';
     $('#rbody').innerHTML = '<div class="panehint">Open a note to see what links to it.</div>';
@@ -153,6 +159,7 @@ function renderDoc() {
     return;
   }
   doc.hidden = false; empty.hidden = true;
+  document.body.classList.remove('nonote');
   if (document.activeElement !== $('#title')) $('#title').value = n.title || '';
   if (document.activeElement !== $('#ed')) $('#ed').value = n.body || '';
   showReading();
@@ -239,7 +246,7 @@ async function openNote(id) {
   if (n.vault) S.view = 'vault';
   else if (S.view === 'vault') { lockVault(true); S.view = 'notes'; }
   closeSide();
-  renderDoc(); renderSide();
+  renderDoc(); renderSide(); updateBack();
 }
 
 async function createNote(opts) {
@@ -251,7 +258,7 @@ async function createNote(opts) {
   } else S.notes.unshift(n);
   await saveNote(n, { quiet: true });
   S.current = n;
-  renderDoc(); renderSide();
+  renderDoc(); renderSide(); updateBack();
   $('#title').focus();
   return n;
 }
@@ -694,9 +701,24 @@ function renderHome() {
   if (vaultN) bits.push(vaultN + ' in the Vault');
   if (recent[0]) bits.push('last written ' + fmtWhen(recent[0].updated).toLowerCase());
 
+  /* A card is a line of the note, not the note: markdown noise and an attachment's address read
+     as damage on a page that is meant to look settled, so the words are what is shown. */
+  const snippet = n => {
+    const raw = String(n.body || '');
+    const text = raw
+      .replace(/!\[[^\]]*\]\(unote-media:[^)]*\)/g, ' ')
+      .replace(/\[([^\]]*)\]\(unote-media:[^)]*\)/g, '$1')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/^#{1,6}\s*/gm, '')
+      .replace(/\s+/g, ' ').trim();
+    if (text) return text.slice(0, 110);
+    if (/!\[[^\]]*\]\(unote-media:/.test(raw)) return 'A drawing';
+    if (/unote-media:/.test(raw)) return 'An attachment';
+    return 'Empty note';
+  };
   const card = n => '<button class="homecard" data-note="' + n.id + '">' +
     '<span class="hc-t">' + esc(noteTitle(n)) + '</span>' +
-    '<span class="hc-s">' + esc(String(n.body || '').replace(/\s+/g, ' ').trim().slice(0, 110) || 'Empty note') + '</span>' +
+    '<span class="hc-s">' + esc(snippet(n)) + '</span>' +
     '<span class="hc-w">' + esc(fmtWhen(n.updated)) + '</span></button>';
 
   box.dataset.home = '1';
@@ -715,7 +737,9 @@ function renderHome() {
     '</div>';
 
   box.onclick = e => {
-    const h = e.target.closest('[data-home]');
+    /* #empty itself carries data-home as a flag for the stylesheet, so this has to mean the real
+       buttons: closest('[data-home]') matched the page and swallowed every card tap. */
+    const h = e.target.closest('button[data-home]');
     if (h) {
       if (h.dataset.home === 'new') { closeSide(); createNote({}); }
       else if (h.dataset.home === 'daily') dailyNote();
