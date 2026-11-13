@@ -1184,6 +1184,68 @@ function applySafeInsets() {
 }
 if (typeof window !== 'undefined') window.UNoteInsets = applySafeInsets;   // the app says when
 
+/* 1.0.28 - the keyboard is not part of the window. The app draws to the whole screen and the phone
+   lays the keys over the bottom of it, so a writing box kept its full height behind them and the
+   line being typed was underneath, out of sight. visualViewport is the part that is not covered,
+   so what it loses is handed to the layout as --kb and the app keeps its writing above it. Only
+   while something is being typed into, so a zoom or a slide of the browser bar is left alone. */
+function typingSomewhere() {
+  const a = document.activeElement;
+  return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable);
+}
+/* How far down the caret sits inside the field, in its own pixels. Asking the field is no use - it
+   answers with a line number and not a height, and a wrapped line is more than one line tall - so
+   the text up to the caret is laid out again in a hidden copy of the field that has the same font,
+   width and padding, and the caret's mark is measured there. */
+function caretY(ed) {
+  const cs = getComputedStyle(ed);
+  const m = document.createElement('div');
+  ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'wordSpacing',
+   'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth',
+   'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'boxSizing'
+  ].forEach(k => { m.style[k] = cs[k]; });
+  m.style.cssText += ';position:absolute;top:0;left:-9999px;visibility:hidden;overflow:hidden;' +
+    'white-space:pre-wrap;word-wrap:break-word;width:' + ed.clientWidth + 'px';
+  m.textContent = ed.value.slice(0, ed.selectionStart == null ? ed.value.length : ed.selectionStart);
+  const mark = document.createElement('span');
+  mark.textContent = '\u200b';
+  m.appendChild(mark);
+  document.body.appendChild(m);
+  const y = mark.offsetTop;
+  m.remove();
+  return y;
+}
+function keepCaretVisible() {
+  const ed = $('#ed');
+  if (!ed || document.activeElement !== ed) return;
+  let y = 0;
+  try { y = caretY(ed); } catch (e) { return; }
+  const lh = parseFloat(getComputedStyle(ed).lineHeight) || 24;
+  const top = ed.scrollTop, h = ed.clientHeight;
+  if (y < top) ed.scrollTop = Math.max(0, y - lh * 0.5);
+  else if (y + lh > top + h) ed.scrollTop = y + lh - h + lh * 0.5;   // the line being typed is in view
+}
+function watchKeyboard() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const root = document.documentElement;
+  const apply = () => {
+    let cover = 0;
+    if (typingSomewhere() && (!vv.scale || vv.scale < 1.01)) {
+      cover = Math.round(window.innerHeight - vv.height - (vv.offsetTop || 0));
+      if (cover < 60) cover = 0;        // a rounded edge or a browser bar sliding is not a keyboard
+    }
+    root.style.setProperty('--kb', cover + 'px');
+    root.classList.toggle('kb-up', cover > 0);
+    if (cover > 0) keepCaretVisible();
+  };
+  vv.addEventListener('resize', apply);
+  vv.addEventListener('scroll', apply);
+  document.addEventListener('focusin', () => setTimeout(apply, 80));   // the keys arrive after the tap
+  document.addEventListener('focusout', () => setTimeout(apply, 80));
+  apply();
+}
+
 /* 1.0.26 - a long press is the app's own gesture now, so the browser's menu for selected text is not
    wanted over a button or a key. It stays for words somebody may want to copy out of a note. */
 document.addEventListener('contextmenu', e => {
@@ -1201,6 +1263,7 @@ async function boot() {
 
   applySafeInsets();
   window.addEventListener('resize', applySafeInsets);
+  watchKeyboard();
 
   document.documentElement.dataset.theme = S.settings.theme || 'dark';
   setAccent(S.settings.accent || '#7c5cff');

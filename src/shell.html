@@ -58,7 +58,7 @@ input,textarea{font:inherit;color:inherit}
 
 #app{
   position:relative;z-index:1;display:grid;grid-template-columns:58px 272px minmax(0,1fr) 306px;height:100dvh;min-height:0;
-  padding:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+  padding:var(--safe-t) var(--safe-r) max(var(--safe-b), var(--kb, 0px)) var(--safe-l);
 }
 #rail{
   display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0;
@@ -225,7 +225,7 @@ body[data-mode="draw"] #inkwrap{display:flex}
 #dlg{
   position:fixed;z-index:41;left:50%;top:50%;transform:translate(-50%,-50%);
   width:min(560px,calc(100vw - 28px));
-  max-height:min(calc(100dvh - var(--safe-t) - var(--safe-b) - 20px),760px);
+  max-height:min(calc(100dvh - var(--safe-t) - max(var(--safe-b), var(--kb, 0px)) - 20px),760px);
   display:flex;flex-direction:column;
   background:var(--panel);border:1px solid var(--line2);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;
 }

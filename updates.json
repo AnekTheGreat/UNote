@@ -1,12 +1,21 @@
 {
   "app": "UNote",
-  "version": "1.0.27",
+  "version": "1.0.28",
   "date": "2026-11-13",
   "notes": [
-    "The patch notes were read from the file beside the page, and in the installed app the page is served from the copy that came inside the APK, so the list stopped at the version the APK was built with: after taking a page over the air it sat behind the running app, with no mark on the release that was actually on screen. The notes now come from the same place the update check comes from, so the newest release is at the top and the one you are on says so.",
-    "With no network the notes fall back to the copy that came with the app, and say that is what they are instead of looking out of date."
+    "The keyboard no longer sits on top of what you are writing. The app draws to the whole screen and the phone lays its keys over the bottom of that, so the writing box kept its full height behind them and the line being typed was underneath, out of sight and impossible to scroll to. The page now measures the part of the screen the keys are covering and keeps the note above it, and it nudges the caret back into view as the box gets shorter.",
+    "Only while a field is focused: a pinch zoom or the browser's own bar sliding away is not treated as a keyboard, and the sheet for a rename or a PIN stays above the keys too."
   ],
   "history": [
+    {
+      "version": "1.0.28",
+      "date": "2026-11-13",
+      "title": "The keyboard stops covering the note",
+      "notes": [
+        "The keyboard no longer sits on top of what you are writing. The app draws to the whole screen and the phone lays its keys over the bottom of that, so the writing box kept its full height behind them and the line being typed was underneath, out of sight and impossible to scroll to. The page now measures the part of the screen the keys are covering and keeps the note above it, and it nudges the caret back into view as the box gets shorter.",
+        "Only while a field is focused: a pinch zoom or the browser's own bar sliding away is not treated as a keyboard, and the sheet for a rename or a PIN stays above the keys too."
+      ]
+    },
     {
       "version": "1.0.27",
       "date": "2026-11-13",
