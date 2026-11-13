@@ -1,7 +1,5 @@
 /* UNote service worker - the app opens offline, and a new version lands by itself. */
-/* The icon build shipped under the same version number, so the shell cache needs its own key:
-   two copies of v1.0.25 in one cache is a phone that opens the old page first. */
-const CACHE = 'unote-v1.0.25a';
+const CACHE = 'unote-v1.0.25';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-maskable.svg', './updates.json'];
 
 self.addEventListener('install', e => {
