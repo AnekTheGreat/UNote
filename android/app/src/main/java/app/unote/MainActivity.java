@@ -62,6 +62,7 @@ public class MainActivity extends Activity {
     private String builtIn;    // version of the page inside this APK, read once
     private static final int REQ_FILES = 43;
     private static final int REQ_MIC = 44;
+    private static final int REQ_NOTIF = 45;
 
     private ValueCallback<Uri[]> fileCallback;
     private PermissionRequest micRequest;
@@ -130,6 +131,7 @@ public class MainActivity extends Activity {
                 }
         });
         web.addJavascriptInterface(new Files(), "UNoteFile");
+        web.addJavascriptInterface(new Alerts(), "UNoteAlert");
 
         /* A WebView will not open a file picker by itself: without onShowFileChooser, the page's
            "photo or video" button does nothing at all. The microphone is refused for the same
@@ -328,6 +330,60 @@ public class MainActivity extends Activity {
             return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(bytes));
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /** What window.UNoteAlert exposes to the page: the phone's own alarm clock, so a reminder rings
+     *  with UNote shut, and the notification permission it needs to be heard. A page cannot wake a
+     *  phone that is not running - that is the whole reason this is not done in JavaScript. */
+    private class Alerts {
+
+        @JavascriptInterface
+        public void ask() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (Build.VERSION.SDK_INT < 33) {
+                        return;              // below Android 13 a notification needs no permission
+                    }
+                    try {
+                        if (checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                                != PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(
+                                    new String[]{"android.permission.POST_NOTIFICATIONS"}, REQ_NOTIF);
+                        }
+                    } catch (Exception ignored) {
+                        // a phone without that permission name simply never has to ask
+                    }
+                }
+            });
+        }
+
+        /** Post one now, for a reminder whose time has already come. */
+        @JavascriptInterface
+        public void notifyNow(String text) {
+            final String t = (text == null || text.trim().isEmpty()) ? "It is time." : text;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ReminderReceiver.show(MainActivity.this, t);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void alarm(String id, long at, String text) {
+            Reminders.set(MainActivity.this, id, at, text);
+        }
+
+        @JavascriptInterface
+        public void cancel(String id) {
+            Reminders.cancel(MainActivity.this, id);
+        }
+
+        @JavascriptInterface
+        public void cancelAll() {
+            Reminders.cancelAll(MainActivity.this);
         }
     }
 
@@ -617,6 +673,9 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int req, String[] perms, int[] granted) {
         super.onRequestPermissionsResult(req, perms, granted);
+        if (req == REQ_NOTIF) {
+            return;                  // the reminder is already set; the answer only decides if it rings
+        }
         if (req != REQ_MIC) {
             return;
         }

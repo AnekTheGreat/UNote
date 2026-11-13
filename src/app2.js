@@ -733,6 +733,13 @@ function renderHome() {
       (recent.length ? '<div class="home-sec">Pick up where you left off</div><div class="home-list">' + recent.map(card).join('') + '</div>' : '') +
       (favs.length ? '<div class="home-sec">Favourites</div><div class="home-chips">' +
         favs.map(n => '<button class="tagchip" data-note="' + n.id + '">' + esc(noteTitle(n)) + '</button>').join('') + '</div>' : '') +
+      /* 1.0.32 - the next reminder is on the page you land on, because a reminder you have to go
+         looking for is a reminder that arrives late. */
+      (typeof remNext === 'function' && remNext() ? '<div class="home-sec">Reminders</div>' +
+        '<button class="listrow" data-home="remind"><span class="grow">' +
+        '<span class="lr-t">' + esc(remNext().text) + '</span>' +
+        '<span class="lr-s">' + esc(remWhen(remNext().at)) + (remPending().length > 1 ? ' \u00b7 ' + (remPending().length - 1) + ' more' : '') + '</span></span>' +
+        '<span class="chev">\u203a</span></button>' : '') +
       /* 1.0.29 - the paragraph that walked through the long press is gone: three lines of small
          print at the foot of the page, where the list already says what it needs to. In its place
          is the shelf, which is a door rather than a lecture. */
@@ -750,6 +757,7 @@ function renderHome() {
       if (h.dataset.home === 'new') { closeSide(); createNote({}); }
       else if (h.dataset.home === 'daily') dailyNote();
       else if (h.dataset.home === 'search') palette('search');
+      else if (h.dataset.home === 'remind') remindersDialog();
       return;
     }
     const n = e.target.closest('[data-note]');

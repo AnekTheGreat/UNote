@@ -9,6 +9,14 @@
          the recording stays in the note. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Reminders. A reminder is a line of text and a time; the phone's own alarm clock rings it, so
+         it has to be allowed to notify, to arm an alarm, and to arm them again after a reboot. The
+         page asks for the notification permission the first time a reminder is written. Nothing
+         about a reminder leaves the phone. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:hardwareAccelerated="true"
@@ -28,5 +36,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- A reminder's alarm, and the re-arming of them after a reboot. Neither is reachable from
+             outside this app. -->
+        <receiver android:name=".ReminderReceiver" android:exported="false" />
+        <receiver android:name=".BootReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

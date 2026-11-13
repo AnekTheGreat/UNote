@@ -1,12 +1,22 @@
 {
   "app": "UNote",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "date": "2026-11-13",
   "notes": [
-    "The keyboard, properly this time. From Android 15 the phone stopped resizing the app when the keys appear and simply lays them over the bottom of it, so the app now shortens its own page above the keys - the same thing older Android did for it. The line you are on stays in sight with a line of air beneath it.",
-    "This one is in the app itself, not only in the page: install the new APK from the releases page for it to take effect. The notes you already have stay exactly where they are."
+    "Reminders. The bell in the rail - and a line on the page the app opens on - holds a list you write in: a reminder is a line of text and a time, and the phone rings it as a notification, with UNote shut and again after a restart. The app asks once for the permission to notify.",
+    "Room to write. A note ends with real space under its last line now, and while the keyboard is up it keeps a clear band of that space, so the line you are typing sits above the keys instead of against them.",
+    "Other apps go where each app really is. SideCut opens its Google Play page; the four that are not in the store open their own download page, and the card says which one it is doing."
   ],
   "history": [
+    {
+      "version": "1.0.32",
+      "date": "2026-11-13",
+      "notes": [
+        "Reminders. The bell in the rail - and a line on the page the app opens on - holds a list you write in: a reminder is a line of text and a time, and the phone rings it as a notification, with UNote shut and again after a restart. The app asks once for the permission to notify.",
+        "Room to write. A note ends with real space under its last line now, and while the keyboard is up it keeps a clear band of that space, so the line you are typing sits above the keys instead of against them.",
+        "Other apps go where each app really is. SideCut opens its Google Play page; the four that are not in the store open their own download page, and the card says which one it is doing."
+      ]
+    },
     {
       "version": "1.0.31",
       "date": "2026-11-13",

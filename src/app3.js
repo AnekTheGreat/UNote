@@ -390,26 +390,33 @@ function hexA(hex, a) {
 /* One page that says what else this person made, with a single door per app. Every link leaves for the
    phone's own browser or the Play Store: the app holds no network of its own, so a link that opened
    inside it would be a blank screen, and this way the note you were reading is still behind you. */
+/* 1.0.32 - one address per app, and it is the real download. An app that is on Google Play opens its
+   Play page (the store app answers that address itself, so the tap lands in the store); an app that
+   is not on Play opens its own release page, which is the only place its APK exists. The pill on each
+   card says which of the two it is, so nothing is promised that the store cannot answer. */
 const OTHER_APPS = [
-  ['FamTM', 'The family tree in your pocket: people, birthdays and photos, kept on the phone.', 'https://github.com/AnekTheGreat/FamTM/releases/latest', 'F'],
-  ['SideCut', 'A music player with its own equaliser and its own way of filing a library.', 'https://play.google.com/store/apps/details?id=com.SideCut.myapp', 'S'],
-  ['MeasureT', 'Elevation, location, a level and a converter, all on one screen.', 'https://anekthegreat.github.io/Compass-EDC/', 'M'],
-  ['My Hub', 'One screen that launches these apps and holds the update for each in one place.', 'https://github.com/AnekTheGreat/My-Hub/releases/latest', 'H'],
-  ['UJournal', 'A journal for the days you bother to write down, from the same hand as the tree.', 'https://github.com/AnekTheGreat/Journal/releases/latest', 'J'],
+  { n: 'SideCut', s: 'A music player with its own equaliser and its own way of filing a library.', pkg: 'com.SideCut.myapp', tint: '#3d7dff', l: 'S' },
+  { n: 'UJournal', s: 'A journal for the days you bother to write down, from the same hand as the tree.', url: 'https://github.com/AnekTheGreat/Journal/releases/latest', tint: '#12a594', l: 'J' },
+  { n: 'FamTM', s: 'The family tree in your pocket: people, birthdays and photos, kept on the phone.', url: 'https://github.com/AnekTheGreat/FamTM/releases/latest', tint: '#e5484d', l: 'F' },
+  { n: 'MeasureT', s: 'Elevation, location, a level and a converter, all on one screen.', url: 'https://anekthegreat.github.io/Compass-EDC/', tint: '#f5a524', l: 'M' },
+  { n: 'My Hub', s: 'One screen that launches these apps and holds the update for each in one place.', url: 'https://github.com/AnekTheGreat/My-Hub/releases/latest', tint: '#8b6cff', l: 'H' },
 ];
+const appHref = a => a.pkg ? 'https://play.google.com/store/apps/details?id=' + a.pkg : a.url;
+const PLAY_GLYPH = '<svg viewBox="0 0 24 24"><path d="M4 3.2v17.6L13.4 12zM15 10.6l3.6-2.1 2.1 3.5-2.1 3.5L15 13.4z"/></svg>';
 function otherAppsDialog() {
   const d = dialog({
     cls: 'wide',
     title: 'Other apps',
-    body: '<div class="hint" style="margin:0 0 12px">Made by the same person who made UNote. Not one of them asks you to sign in, and none of them is watching.</div>' +
+    body: '<div class="hubhero"><b>The rest of the shelf</b><span>Made by the same person who made UNote. One of them is on Google Play and the tap goes there; the others open their own download page, because that is where their APK lives. None of them asks you to sign in.</span></div>' +
       /* 1.0.29 - the row is the link. It used to be a card with a small Open button in it, and a tap
          anywhere else in the row did nothing, which reads as a row that will not open the app. */
       OTHER_APPS.map(a =>
-        '<a class="appcard" href="' + esc(a[2]) + '" target="_blank" rel="noopener">' +
-        '<div class="tile">' + esc(a[3] || a[0].charAt(0)) + '</div>' +
-        '<span class="grow"><b>' + esc(a[0]) + '</b><small>' + esc(a[1]) + '</small></span>' +
-        '<span class="go">Open</span></a>').join('') +
-      '<div class="hint" style="margin:12px 0 0">A tap leaves for the browser or the Play Store and comes back to this note.</div>',
+        '<a class="appcard" href="' + esc(appHref(a)) + '" target="_blank" rel="noopener">' +
+        '<span class="tile" style="--tint:' + esc(a.tint) + '">' + esc(a.l) + '</span>' +
+        '<span class="grow"><b>' + esc(a.n) + '</b><small>' + esc(a.s) + '</small></span>' +
+        (a.pkg ? '<span class="store play">' + PLAY_GLYPH + 'Google Play</span>' : '<span class="store">Download</span>') +
+        '</a>').join('') +
+      '<div class="hint" style="margin:12px 0 0">A tap leaves for the store or the browser and comes back to this note.</div>',
     foot: '<div class="grow"></div><button class="btn primary" data-close="1">Done</button>',
   });
   $$('[data-close]', d).forEach(b => b.addEventListener('click', closeDialog));
@@ -422,6 +429,173 @@ document.addEventListener('click', e => {
   e.preventDefault();
   otherAppsDialog();
 });
+
+/* ---------------- reminders ---------------- */
+/* 1.0.32 - a reminder is a line you write and a time you pick. Three things make it arrive:
+     1. the page keeps the list and checks it every twenty seconds, which is what fires on a desktop
+        tab or a browser left open;
+     2. the app is handed the same list, and hands it to the phone's own AlarmManager - so a reminder
+        rings with UNote shut, which is the whole point of one;
+     3. the phone's alarms do not survive a reboot, so they are written to the app's preferences too
+        and armed again when the phone starts (see Reminders.java / BootReceiver.java).
+   `fired` is kept on the record so a reminder that has already spoken cannot speak again when the
+   page is opened a second time, and `done` is what a tick means. */
+let REM = [];
+const remBridge = () => (typeof window !== 'undefined' && window.UNoteAlert) ? window.UNoteAlert : null;
+
+function remWhen(at) {
+  const d = new Date(at), n = new Date(), diff = at - nowMs();
+  const same = (a, b) => a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+  const hm = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (diff > 0 && diff < HOUR) return 'in ' + Math.max(1, Math.round(diff / MIN)) + ' min';
+  if (same(d, n)) return 'today ' + hm;
+  if (same(d, new Date(n.getTime() + DAY))) return 'tomorrow ' + hm;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + hm;
+}
+const remPending = () => REM.filter(r => !r.done).sort((a, b) => a.at - b.at);
+const remNext = () => remPending()[0] || null;
+
+/* The phone is told the whole list on every change rather than the one that moved: a reminder that
+   was deleted must not ring, and re-arming the rest costs nothing. */
+function remSyncPhone() {
+  const nb = remBridge();
+  if (!nb) return;
+  try {
+    if (typeof nb.cancelAll === 'function') nb.cancelAll();
+    remPending().forEach(r => { try { nb.alarm(r.id, r.at, r.text); } catch (e) {} });
+  } catch (e) {}
+}
+async function saveRem() {
+  try { await kvSet('reminders', REM); } catch (e) {}
+  remSyncPhone();
+  if ($('#empty') && $('#empty').dataset.home) renderHome();
+}
+
+function remNotify(text) {
+  const nb = remBridge();
+  try { if (nb && typeof nb.notifyNow === 'function') { nb.notifyNow(text); return; } } catch (e) {}
+  const opts = { body: text, tag: 'unote-reminder', icon: 'icon.svg', badge: 'icon.svg' };
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg && reg.showNotification) reg.showNotification('UNote reminder', opts);
+          else new Notification('UNote reminder', opts);
+        }).catch(() => { try { new Notification('UNote reminder', opts); } catch (e) {} });
+      } else {
+        new Notification('UNote reminder', opts);
+      }
+      return;
+    }
+  } catch (e) {}
+  toast('Reminder: ' + text, 7000);
+}
+/* Asking once, when the first reminder is written, is the only moment the question makes sense. */
+function remAsk() {
+  const nb = remBridge();
+  try { if (nb && typeof nb.ask === 'function') { nb.ask(); return; } } catch (e) {}
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission();
+  } catch (e) {}
+}
+async function remFire(r) {
+  if (!r || r.done || r.fired) return;
+  r.fired = nowMs();
+  try { await kvSet('reminders', REM); } catch (e) {}
+  remNotify(r.text);
+}
+let remTimer = null;
+function remTick() {
+  const due = REM.filter(r => !r.done && !r.fired && r.at <= nowMs());
+  if (!due.length) return;
+  due.forEach(remFire);
+  if ($('#empty') && $('#empty').dataset.home) renderHome();
+}
+function remWatch() {
+  clearInterval(remTimer);
+  remTimer = setInterval(remTick, 20000);
+  remTick();
+}
+
+/* The time box wants a local "YYYY-MM-DDTHH:MM", which is what the phone's own picker shows. */
+function remInput(at) {
+  const d = new Date(at);
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function remindersDialog() {
+  const d = dialog({
+    cls: '',
+    title: 'Reminders',
+    body: '<div id="remBody"></div>',
+    foot: '<div class="grow"></div><button class="btn primary" data-close="1">Done</button>',
+  });
+  remPaint(d);
+  return d;
+}
+function remPaint(d) {
+  d = d || $('#dlg');
+  const box = $('#remBody', d);
+  if (!box) return;
+  const list = REM.slice().sort((a, b) => (a.done - b.done) || (a.at - b.at));
+  const rows = list.map(r => {
+    const late = !r.done && r.at <= nowMs();
+    return '<div class="remrow' + (r.done ? ' done' : '') + (late ? ' late' : '') + '">' +
+      '<span class="rw">' + esc(r.done ? 'Done' : remWhen(r.at)) + '</span>' +
+      '<span class="rt">' + esc(r.text) + '</span>' +
+      '<button data-rem-tick="' + r.id + '" title="' + (r.done ? 'Put it back' : 'Done') + '"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>' +
+      '<button data-rem-del="' + r.id + '" title="Delete"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';
+  }).join('');
+  box.innerHTML =
+    (rows || '<div class="remempty">Nothing set yet. Write what you want to remember, pick the time, and the phone will tap you on the shoulder - with UNote shut, if that is where you will be.</div>') +
+    '<div class="remform">' +
+      '<input id="remText" type="text" placeholder="Water the plants, call Sam, take the tablet" autocomplete="off">' +
+      '<div class="row"><input id="remAt" type="datetime-local" value="' + remInput(nowMs() + HOUR) + '">' +
+        '<button class="btn primary" id="remAdd" style="padding:10px 16px">Add</button></div>' +
+      '<div class="home-chips">' +
+        [[10 * MIN, 'In 10 min'], [HOUR, 'In an hour'], [0, 'Tonight 8pm'], [-1, 'Tomorrow 9am']].map(([off, label], i) =>
+          '<button class="tagchip" data-rem-when="' + i + '">' + label + '</button>').join('') +
+      '</div>' +
+    '</div>' +
+    '<div class="hint" style="margin:10px 0 0">A reminder rings as a notification. On a phone the app asks once for that; say yes and it will reach you even when UNote is closed.</div>';
+
+  const quick = [
+    () => nowMs() + 10 * MIN,
+    () => nowMs() + HOUR,
+    () => { const t = new Date(); t.setHours(20, 0, 0, 0); return t.getTime() > nowMs() ? t.getTime() : nowMs() + HOUR; },
+    () => { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(9, 0, 0, 0); return t.getTime(); },
+  ];
+  $$('[data-rem-when]', box).forEach(b => b.addEventListener('click', () => {
+    const at = quick[Number(b.dataset.remWhen)]();
+    $('#remAt', box).value = remInput(at);
+    $('#remText', box).focus();
+  }));
+  $$('[data-rem-tick]', box).forEach(b => b.addEventListener('click', () => {
+    const r = REM.find(x => x.id === b.dataset.remTick);
+    if (!r) return;
+    r.done = !r.done;
+    if (!r.done && r.at <= nowMs()) { r.at = nowMs() + HOUR; r.fired = 0; toast('Put back, an hour from now.'); }
+    saveRem(); remPaint(d);
+  }));
+  $$('[data-rem-del]', box).forEach(b => b.addEventListener('click', () => {
+    REM = REM.filter(x => x.id !== b.dataset.remDel);
+    saveRem(); remPaint(d);
+  }));
+  const add = () => {
+    const text = ($('#remText', box).value || '').trim();
+    const at = new Date($('#remAt', box).value || '').getTime();
+    if (!text) { toast('Write what you want to be reminded of.'); return; }
+    if (!isFinite(at)) { toast('Pick a time for it.'); return; }
+    if (at < nowMs() - MIN) { toast('That time has already gone by. Pick a later one.'); return; }
+    REM.push({ id: uid(), text: text, at: at, done: false, fired: 0 });
+    remAsk();
+    saveRem();
+    toast('Reminder set for ' + remWhen(at) + '.');
+    remPaint(d);
+  };
+  $('#remAdd', box).addEventListener('click', add);
+  $('#remText', box).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+}
 
 function patchNotesDialog(justUpdated) {
   const d = dialog({
@@ -1234,7 +1408,7 @@ function keepCaretVisible() {
   const lh = parseFloat(getComputedStyle(ed).lineHeight) || 24;
   const top = ed.scrollTop, h = ed.clientHeight;
   if (y < top) ed.scrollTop = Math.max(0, y - lh * 0.5);
-  else if (y + lh > top + h) ed.scrollTop = y + lh - h + lh * 0.5;   // the line being typed is in view
+  else if (y + lh * 2.5 > top + h) ed.scrollTop = y + lh * 2.5 - h;   // the line you are on, with air under it
 }
 function watchKeyboard() {
   const vv = window.visualViewport;
@@ -1271,6 +1445,12 @@ async function boot() {
   if (saved) Object.assign(S.settings, saved);
   const meta = await vaultMeta();
   if (meta && meta.on) { S.vault.on = true; S.vault.salt = meta.salt; S.vault.verifier = meta.verifier; }
+
+  /* 1.0.32 - the reminders come back with the settings, are handed to the phone's alarm clock
+     again, and are watched from then on. */
+  try { const savedRem = await kvGet('reminders'); REM = Array.isArray(savedRem) ? savedRem : []; } catch (e) { REM = []; }
+  remSyncPhone();
+  remWatch();
 
   applySafeInsets();
   window.addEventListener('resize', applySafeInsets);
@@ -1330,6 +1510,7 @@ async function boot() {
     if (go === 'graph') openGraph();
     if (go === 'tags') { if (S.vault.key) lockVault(true); S.view = 'tags'; S.folder = ''; renderSide(); }
     if (go === 'vault') goVault();
+    if (go === 'remind') remindersDialog();
     if (go === 'settings') settingsDialog();
   }));
   $('#menuBtn').addEventListener('click', () => { $('#side').classList.toggle('open'); updateBack(); });
