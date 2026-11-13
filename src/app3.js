@@ -428,21 +428,33 @@ function patchNotesDialog(justUpdated) {
     foot: '<div class="grow"></div><button class="btn primary" data-close="1">Done</button>',
   });
   const body = $('#pnBody', d);
-  fetch('updates.json?t=' + nowMs())
-    .then(r => { if (!r.ok) throw new Error('no notes'); return r.json(); })
-    .then(data => {
-      const hist = (data.history || []).slice().sort((a, b) => cmpVer(b.version, a.version));
-      if (!hist.length) throw new Error('no notes');
-      body.innerHTML = hist.map(h => {
-        const here = h.version === VERSION;
-        return '<div class="setsec">' +
-          '<h4>' + esc(h.version) + (here ? ' <span class="pill acc" style="font-size:10px">you are here</span>' : '') + '</h4>' +
-          '<div class="sub">' + esc(h.title || '') + (h.date ? ' · ' + esc(h.date) : '') + '</div>' +
-          '<ul style="margin:8px 0 0 18px;padding:0">' +
-          (h.notes || []).map(n => '<li style="margin:5px 0;font-size:13px;line-height:1.45">' + esc(n) + '</li>').join('') +
-          '</ul></div>';
-      }).join('');
-    })
+  /* 1.0.27 - "updates.json" on its own resolves beside the page, and in the installed app the page is
+     served from the copy that came inside the APK. Fetching it there answered with the notes the APK
+     was built with, so once a page had been taken over the air the list stopped short of the running
+     app and never marked "you are here". The notes are read from the same place the update check
+     reads from; the copy beside the page is only the answer when there is no network. */
+  const paint = data => {
+    const hist = (data.history || []).slice().sort((a, b) => cmpVer(b.version, a.version));
+    if (!hist.length) throw new Error('no notes');
+    body.innerHTML = hist.map(h => {
+      const here = h.version === VERSION;
+      return '<div class="setsec">' +
+        '<h4>' + esc(h.version) + (here ? ' <span class="pill acc" style="font-size:10px">you are here</span>' : '') + '</h4>' +
+        '<div class="sub">' + esc(h.title || '') + (h.date ? ' · ' + esc(h.date) : '') + '</div>' +
+        '<ul style="margin:8px 0 0 18px;padding:0">' +
+        (h.notes || []).map(n => '<li style="margin:5px 0;font-size:13px;line-height:1.45">' + esc(n) + '</li>').join('') +
+        '</ul></div>';
+    }).join('');
+  };
+  const read = base => fetch(base + 'updates.json?t=' + nowMs(), { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error('no notes'); return r.json(); });
+  read(otaBase())
+    .then(paint)
+    .catch(() => read('').then(data => {
+      if (body) body.insertAdjacentHTML('afterbegin',
+        '<div class="hint" style="margin:0 0 10px">No answer from the site, so these are the notes that came with the app.</div>');
+      paint(data);
+    }))
     .catch(() => { body.innerHTML = '<div class="hint">The notes could not be read right now. They live in updates.json next to the app.</div>'; });
 }
 

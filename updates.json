@@ -1,13 +1,21 @@
 {
   "app": "UNote",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "date": "2026-11-13",
   "notes": [
-    "A long press is the app's own again. Holding a key on the PIN pad used to bring Android's Copy, Share and Select all menu down over the pad, with a pair of selection handles sitting on the keys; nothing on the app's own screen is text to select now, which also keeps a two second hold on a note a hold on a note. The words inside a note, and the text you type, are still selectable and copyable.",
-    "The pad answers under the finger instead of after it: a key dips as it is pressed, and taps are no longer held back while the browser waits to see whether a second one is coming.",
-    "A dot pops as it fills, and a wrong PIN shakes the dots and the keys as well as turning the message red, then clears the entry so the next try starts from nothing. Every one of those moves is off when the phone asks for reduced motion."
+    "The patch notes were read from the file beside the page, and in the installed app the page is served from the copy that came inside the APK, so the list stopped at the version the APK was built with: after taking a page over the air it sat behind the running app, with no mark on the release that was actually on screen. The notes now come from the same place the update check comes from, so the newest release is at the top and the one you are on says so.",
+    "With no network the notes fall back to the copy that came with the app, and say that is what they are instead of looking out of date."
   ],
   "history": [
+    {
+      "version": "1.0.27",
+      "date": "2026-11-13",
+      "title": "Patch notes are the ones the page is running",
+      "notes": [
+        "The patch notes were read from the file beside the page, and in the installed app the page is served from the copy that came inside the APK, so the list stopped at the version the APK was built with: after taking a page over the air it sat behind the running app, with no mark on the release that was actually on screen. The notes now come from the same place the update check comes from, so the newest release is at the top and the one you are on says so.",
+        "With no network the notes fall back to the copy that came with the app, and say that is what they are instead of looking out of date."
+      ]
+    },
     {
       "version": "1.0.26",
       "date": "2026-11-13",
