@@ -426,6 +426,8 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
     transition:transform .12s ease,border-color .16s ease,background .16s ease}
   .appcard:hover{border-color:var(--accent);background:rgba(255,255,255,.07)}
   .appcard:active{transform:scale(.99)}
+  .appcard:focus{outline:none}
+  .appcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .appcard .tile{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none;
     font-weight:700;font-size:16px;color:#fff;background:linear-gradient(160deg,var(--accent),#4b34c9);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.36),0 8px 18px rgba(76,52,201,.32)}
