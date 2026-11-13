@@ -1,12 +1,20 @@
 {
   "app": "UNote",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "date": "2026-11-13",
   "notes": [
-    "Every app on the shelf opens when it is tapped, not only the small Open button in the corner of its row: the whole row is the link now, and it dips under the finger like the rest of the app.",
-    "The line of small print under the recent notes is gone. The three buttons at the top of the page share their row instead of leaving Search sitting on its own under a gap, and Other apps is at the foot of the page where it can be found without going into Settings."
+    "The keyboard no longer covers the note. The page now ends where the keys begin instead of running on underneath them, so the toolbar, the word count and the last line all stay in sight.",
+    "The line you are typing keeps a line of air above the keys rather than sitting against them, the way an OxygenOS note does, and the bottom rail steps out of the way while the keys are up."
   ],
   "history": [
+    {
+      "version": "1.0.30",
+      "date": "2026-11-13",
+      "notes": [
+        "The keyboard no longer covers the note. The page now ends where the keys begin instead of running on underneath them, so the toolbar, the word count and the last line all stay in sight.",
+        "The line you are typing keeps a line of air above the keys rather than sitting against them, the way an OxygenOS note does, and the bottom rail steps out of the way while the keys are up."
+      ]
+    },
     {
       "version": "1.0.29",
       "date": "2026-11-13",

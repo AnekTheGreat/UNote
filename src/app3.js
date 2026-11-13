@@ -1181,7 +1181,15 @@ function applySafeInsets() {
   const real = num(nf.safeTop);                            // a real measurement always wins
   const d = document.documentElement.style;
   d.setProperty('--safe-t', (real > 0 ? real : floor) + 'px');
-  d.setProperty('--safe-b', num(nf.safeBottom) + 'px');
+  const bottom = num(nf.safeBottom);
+  d.setProperty('--safe-b', bottom + 'px');
+  /* A bottom inset the height of a keyboard is the keyboard. The page gives the writing a line
+     of air above it and lets the bottom rail go, and --kb carries the same number for the
+     rules that ask how much of the screen the keys took. */
+  const keys = bottom > 120;
+  document.body.classList.toggle('kb-native', keys);
+  if (keys) d.setProperty('--kb', bottom + 'px');
+  else if (d.getPropertyValue('--kb') === bottom + 'px') d.removeProperty('--kb');
   d.setProperty('--safe-l', num(nf.safeLeft) + 'px');
   d.setProperty('--safe-r', num(nf.safeRight) + 'px');
 }

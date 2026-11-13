@@ -57,8 +57,13 @@ input,textarea{font:inherit;color:inherit}
 ::-webkit-scrollbar-track{background:transparent}
 
 #app{
-  position:relative;z-index:1;display:grid;grid-template-columns:58px 272px minmax(0,1fr) 306px;height:100dvh;min-height:0;
-  padding:var(--safe-t) var(--safe-r) max(var(--safe-b), var(--kb, 0px)) var(--safe-l);
+  position:relative;z-index:1;display:grid;grid-template-columns:58px 272px minmax(0,1fr) 306px;
+  /* 1.0.30 - the keyboard is a shorter screen, not a strip of padding. Padding under the page moved
+     nothing: the box stayed the height of the whole screen and the writing went on underneath the
+     keys. Taking the keyboard off the height leaves the app a page the size of the part you can see,
+     so the status row, the toolbar and the last line all end above the keys. */
+  height:calc(100dvh - max(var(--safe-b, 0px), var(--kb, 0px)));min-height:0;
+  padding:var(--safe-t) var(--safe-r) 0 var(--safe-l);
 }
 #rail{
   display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0;
@@ -154,6 +159,10 @@ body[data-mode="read"] #panes{grid-template-columns:1fr;grid-template-rows:minma
 /* 1.0.17 - the Draw pane: a page under the title, the pens above it. */
 #inkwrap{display:none;flex:1;flex-direction:column;gap:10px;min-height:0;padding-bottom:18px}
 body[data-mode="draw"] #panes{display:none}
+@media (max-width:600px){
+  /* the rail runs along the bottom of the screen, which is where the keys are now */
+  body.kb-up #rail,body.kb-native #rail{display:none}
+}
 body[data-mode="draw"] #inkwrap{display:flex}
 #inkbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 #inkbar .sw{width:26px;height:26px;border-radius:9px;border:1px solid var(--line2);padding:0;cursor:pointer}
@@ -619,6 +628,10 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   /* A button styled display:grid outranks the hidden attribute it is given, which is why the back
      chevron used to sit on screen with nothing behind it to go back to. */
   #top [hidden]{display:none}
+  /* An OxygenOS note keeps the line you are on clear of the keys instead of pressing it against
+     them, so while the keyboard is up the writing box keeps one line of room to sit on. */
+  body.kb-up #ed,body.kb-native #ed{padding-bottom:calc(24px + 1.7em)}
+  body.kb-up #pv,body.kb-native #pv{padding-bottom:calc(24px + 1.7em)}
   .home-chips{display:flex;flex-wrap:wrap;gap:6px}
   /* A wide window has room for one row of three; a phone gives New note the row to itself and puts
      the other two side by side, which is a shape instead of a gap with Search under it. */
