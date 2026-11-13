@@ -2,7 +2,7 @@
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.24';
+const VERSION = '1.0.25';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -102,6 +102,8 @@ const S = {
   paletteQuery: '',
   right: 'links',
   dirty: false,
+  sel: {},               // notes picked out of the list, by id
+  selMode: false,        // the bar of actions is showing
 };
 
 /* A record with ciphertext in it is a Vault note, whichever list a file happened to keep it in.

@@ -86,7 +86,10 @@ function renderSide() {
       : 'No notes here yet.') + '</div>';
   } else {
     list.forEach(n => {
-      h += '<button class="noteitem' + (S.current && S.current.id === n.id ? ' on' : '') + '" data-note="' + n.id + '">' +
+      const picked = !!S.sel[n.id];
+      const on = S.selMode ? picked : (S.current && S.current.id === n.id);
+      h += '<button class="noteitem' + (on ? ' on' : '') + (S.selMode ? ' selecting' : '') + '" data-note="' + n.id + '">' +
+        (S.selMode ? '<span class="chk' + (picked ? ' on' : '') + '"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>' : '') +
         (n.fav ? '<span class="st">★</span>' : '') +
         (n.ink && n.ink.s && n.ink.s.length ? '<span class="st" title="Handwriting">✎</span>' : '') +
         '<span class="t">' + esc(noteTitle(n)) + '</span>' +
@@ -94,6 +97,7 @@ function renderSide() {
     });
   }
   body.innerHTML = h;
+  renderSelBar();
   updateBack();
 }
 
@@ -106,6 +110,7 @@ function backTarget() {
   if (gw && !gw.hidden) return 'graph';
   const d = $('#dlg');
   if (d && !d.hidden) return 'dialog';
+  if (S.selMode) return 'select';
   const side = $('#side');
   if (side && side.classList.contains('open')) return 'side';
   if (S.folder || S.tag) return 'filter';
@@ -123,6 +128,7 @@ function goBack() {
   if (!t) return false;
   if (t === 'graph') closeGraph();
   else if (t === 'dialog') closeDialog();
+  else if (t === 'select') selExit();
   else if (t === 'side') closeSide();
   else {
     if (S.vault.key) lockVault(true);
@@ -143,6 +149,7 @@ function renderDoc() {
     $('#crumbs').innerHTML = '<b>UNote</b>';
     $('#rbody').innerHTML = '<div class="panehint">Open a note to see what links to it.</div>';
     $('#sWords').textContent = '0 words';
+    renderHome();
     return;
   }
   doc.hidden = false; empty.hidden = true;
@@ -462,4 +469,260 @@ function drawPalette() {
   $$('#palList .palitem').forEach(b => b.addEventListener('click', () => {
     const it = palItems[+b.dataset.pal]; if (it) it.run();
   }));
+}
+
+
+/* ---------------- more than one note at a time ---------------- */
+/* 1.0.25 - every action took the note you had open, so putting five notes into the Vault meant
+   opening five notes. A hold on a row now starts a selection: taps add and remove notes from it,
+   and one bar acts on all of them - star them, file them, seal them, bin them - in a single go. */
+const SEL_HOLD_MS = 2000;          /* the hold the gesture asks for, with a ring drawn while it runs */
+const selIds = () => Object.keys(S.sel).filter(id => S.sel[id]);
+const selNoteCount = () => selIds().length;
+
+function selReset() { S.sel = {}; }
+
+function selEnter(id) {
+  if (!S.selMode) { S.selMode = true; selReset(); }
+  if (id) S.sel[id] = 1;
+  renderSide();
+  updateBack();
+}
+
+function selExit() {
+  if (!S.selMode) return;
+  S.selMode = false;
+  selReset();
+  renderSide();
+  updateBack();
+}
+
+function selToggle(id) {
+  if (S.sel[id]) delete S.sel[id]; else S.sel[id] = 1;
+  if (!selNoteCount()) { selExit(); return; }
+  renderSide();
+}
+
+function selAll() {
+  const list = visibleNotes();
+  const had = selNoteCount();
+  const all = had && had >= list.length;
+  selReset();
+  if (!all) list.forEach(n => { S.sel[n.id] = 1; });
+  renderSide();
+}
+
+/* The bar says only what can be done to the notes in front of you: no Folder or Star in the Trash,
+   no Vault button while the Vault is what you are looking at. */
+function renderSelBar() {
+  const bar = $('#selbar');
+  if (!bar) return;
+  bar.hidden = !S.selMode;
+  if (!S.selMode) return;
+  const n = selNoteCount();
+  const c = $('#selCount');
+  if (c) c.textContent = n === 1 ? '1 note' : n + ' notes';
+  const all = $('#selAll');
+  const total = visibleNotes().length;
+  if (all) all.textContent = (n && n >= total) ? 'None' : 'All';
+  const bin = S.view === 'trash';
+  const show = (key, on) => {
+    const b = bar.querySelector('[data-sel="' + key + '"]');
+    if (b) b.hidden = !on;
+  };
+  show('fav', !bin);
+  show('folder', !bin);
+  show('vault', !bin && S.view !== 'vault');
+  show('trash', !bin);
+  show('restore', bin);
+}
+
+async function selDo(action) {
+  const notes = selIds().map(findNote).filter(Boolean);
+  if (!notes.length) { selExit(); return; }
+  const many = notes.length === 1 ? '1 note' : notes.length + ' notes';
+
+  if (action === 'folder') { selFolder(notes); return; }
+
+  if (action === 'vault') {
+    const plain = notes.filter(n => !n.vault);
+    if (!plain.length) { toast('Those notes are already in the Vault.'); selExit(); return; }
+    if (!S.vault.key) { unlockDialog(() => selVault(plain)); return; }
+    selVault(plain);
+    return;
+  }
+
+  if (action === 'fav') {
+    const want = !notes.every(n => n.fav);
+    for (const n of notes) { n.fav = want; await saveNote(n, { quiet: true }); }
+    selExit(); renderSide();
+    if (S.current) renderDoc();
+    toast(want ? 'Pinned ' + many + ' to favourites.' : 'Took ' + many + ' out of favourites.');
+    return;
+  }
+
+  if (action === 'trash') {
+    const at = nowMs();
+    for (const n of notes) { n.deleted = at; await saveNote(n, { quiet: true }); }
+    if (notes.some(n => S.current && S.current.id === n.id)) { S.current = null; }
+    selExit(); renderSide(); renderDoc();
+    toast('Moved ' + many + ' to the trash.');
+    return;
+  }
+
+  if (action === 'restore') {
+    for (const n of notes) { n.deleted = 0; await saveNote(n, { quiet: true }); }
+    selExit(); renderSide(); renderDoc();
+    toast('Restored ' + many + '.');
+  }
+}
+
+/* Several notes are sealed one after another and the Vault is read back once at the end: doing it
+   per note meant decrypting the whole Vault again for every note in the selection. */
+async function selVault(notes) {
+  if (!S.vault.key) return;
+  let done = 0;
+  for (const n of notes) {
+    const v = Object.assign({}, n, { vault: true, updated: nowMs(), deleted: 0 });
+    try { await saveNote(v, { quiet: true }); } catch (e) { continue; }
+    S.notes = S.notes.filter(x => x.id !== n.id);
+    if (S.current && S.current.id === n.id) S.current = v;
+    done++;
+  }
+  await decryptVault();
+  if (S.current && S.current.vault) S.current = findNote(S.current.id) || S.current;
+  selExit(); renderSide(); renderDoc();
+  toast(done ? 'Moved ' + (done === 1 ? '1 note' : done + ' notes') + ' into the Vault.'
+    : 'Nothing could be sealed - the Vault is closed.');
+}
+
+function selFolder(notes) {
+  const folders = Array.from(new Set(liveNotes().map(n => n.folder).filter(Boolean))).sort();
+  const d = dialog({
+    title: (notes.length === 1 ? '1 note' : notes.length + ' notes') + ' into a folder',
+    body: '<label class="field"><span>Folder</span><input id="sfName" placeholder="e.g. Work, Ideas, Recipes" maxlength="40"></label>' +
+      (folders.length
+        ? '<div class="hint" style="margin:-2px 0 8px">Or pick one of these:</div><div>' +
+          folders.map(f => '<button class="tagchip" data-sf="' + esc(f) + '">' + esc(f) + '</button>').join('') +
+          '<button class="tagchip" data-sf="">No folder</button></div>'
+        : '') +
+      '<div class="hint" style="margin:10px 0 0">Folders are one level, the same as everywhere else in the app.</div>',
+    foot: '<div class="grow"></div><button class="btn" data-close="1">Cancel</button><button class="btn primary" id="sfGo">Move</button>',
+  });
+  const apply = async name => {
+    for (const n of notes) { n.folder = name; await saveNote(n, { quiet: true }); }
+    closeDialog(); selExit(); renderSide();
+    if (S.current) renderDoc();
+    toast('Moved ' + (notes.length === 1 ? '1 note' : notes.length + ' notes') +
+      (name ? ' into ' + name : ' out of their folder') + '.');
+  };
+  $('#sfGo', d).addEventListener('click', () => apply($('#sfName', d).value.trim()));
+  $('#sfName', d).addEventListener('keydown', e => { if (e.key === 'Enter') apply($('#sfName', d).value.trim()); });
+  d.addEventListener('click', e => {
+    const chip = e.target.closest('[data-sf]');
+    if (chip) apply(chip.dataset.sf);
+  });
+  setTimeout(() => { const i = $('#sfName'); if (i) i.focus(); }, 40);
+}
+
+/* A hold, not a tap: two seconds with a ring drawn on the row, so nothing is ever selected by
+   accident while scrolling. A finger that travels before the ring closes was a scroll, and lets go. */
+let selTimer = 0, selRow = null, selAt = { x: 0, y: 0 }, selSuppress = false;
+
+function wireNotePress() {
+  const body = $('#sideBody');
+  if (!body || body.dataset.press) return;
+  body.dataset.press = '1';
+  const stop = () => {
+    clearTimeout(selTimer); selTimer = 0;
+    if (selRow) selRow.classList.remove('holding');
+    selRow = null;
+  };
+  body.addEventListener('pointerdown', e => {
+    const row = e.target.closest('[data-note]');
+    if (!row) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    selSuppress = false;
+    if (S.selMode) return;                 /* already selecting: a tap toggles, nothing to hold */
+    stop();
+    selRow = row; selAt = { x: e.clientX, y: e.clientY };
+    row.classList.add('holding');
+    selTimer = setTimeout(() => {
+      selTimer = 0;
+      const held = selRow ? selRow.dataset.note : '';
+      if (selRow) selRow.classList.remove('holding');
+      selRow = null;
+      selSuppress = true;
+      try { if (navigator.vibrate) navigator.vibrate(14); } catch (err) {}
+      selEnter(held);
+      toast('Tap notes to add them, then pick an action.', 2600);
+    }, SEL_HOLD_MS);
+  });
+  body.addEventListener('pointermove', e => {
+    if (!selTimer) return;
+    if (Math.abs(e.clientX - selAt.x) + Math.abs(e.clientY - selAt.y) > 10) stop();
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => body.addEventListener(ev, stop));
+  body.addEventListener('scroll', stop, { passive: true });
+
+  const bar = $('#selbar');
+  if (bar) {
+    bar.addEventListener('click', e => {
+      if (e.target.closest('#selDone')) { selExit(); return; }
+      if (e.target.closest('#selAll')) { selAll(); return; }
+      const b = e.target.closest('[data-sel]');
+      if (b) selDo(b.dataset.sel);
+    });
+  }
+}
+
+/* ---------------- the page the app opens on ---------------- */
+/* 1.0.25 - launch used to open the most recently changed note, which meant it opened whatever was
+   last touched whether or not that was what you wanted. The app now lands on a page: who you are
+   writing as, how much you have written, a way in to a new note or today's, the notes you were last
+   in and the ones you pinned. Nothing is open until you open it. */
+function renderHome() {
+  const box = $('#empty');
+  if (!box) return;
+  const live = sortNotes(liveNotes());
+  const recent = live.slice(0, 4);
+  const favs = live.filter(n => n.fav).slice(0, 8);
+  const hour = new Date().getHours();
+  const hi = hour < 5 ? 'Still awake' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const vaultN = S.vault.on ? (S.vault.key ? S.vault.plain.length : S.vault.notes.length) : 0;
+  const bits = [live.length + (live.length === 1 ? ' note' : ' notes')];
+  if (vaultN) bits.push(vaultN + ' in the Vault');
+  if (recent[0]) bits.push('last written ' + fmtWhen(recent[0].updated).toLowerCase());
+
+  const card = n => '<button class="homecard" data-note="' + n.id + '">' +
+    '<span class="hc-t">' + esc(noteTitle(n)) + '</span>' +
+    '<span class="hc-s">' + esc(String(n.body || '').replace(/\s+/g, ' ').trim().slice(0, 110) || 'Empty note') + '</span>' +
+    '<span class="hc-w">' + esc(fmtWhen(n.updated)) + '</span></button>';
+
+  box.dataset.home = '1';
+  box.innerHTML =
+    '<div class="home">' +
+      '<div class="home-hello"><h2>' + hi + '</h2><p>' + esc(bits.join(' \u00b7 ')) + '</p></div>' +
+      '<div class="home-acts">' +
+        '<button class="home-btn primary" data-home="new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New note</button>' +
+        '<button class="home-btn" data-home="daily"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>Today</button>' +
+        '<button class="home-btn" data-home="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Search</button>' +
+      '</div>' +
+      (recent.length ? '<div class="home-sec">Pick up where you left off</div><div class="home-list">' + recent.map(card).join('') + '</div>' : '') +
+      (favs.length ? '<div class="home-sec">Favourites</div><div class="home-chips">' +
+        favs.map(n => '<button class="tagchip" data-note="' + n.id + '">' + esc(noteTitle(n)) + '</button>').join('') + '</div>' : '') +
+      '<p class="home-tip">Hold a note in the list for two seconds and a ring closes around it - then tap the others you want, and the bar that appears can star them, file them, put them in the Vault or send them to the trash all at once.</p>' +
+    '</div>';
+
+  box.onclick = e => {
+    const h = e.target.closest('[data-home]');
+    if (h) {
+      if (h.dataset.home === 'new') { closeSide(); createNote({}); }
+      else if (h.dataset.home === 'daily') dailyNote();
+      else if (h.dataset.home === 'search') palette('search');
+      return;
+    }
+    const n = e.target.closest('[data-note]');
+    if (n) openNote(n.dataset.note);
+  };
 }

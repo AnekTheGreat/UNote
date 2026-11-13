@@ -549,6 +549,79 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
     .pinpad{gap:7px}
     .pinpad button{padding:12px 0}
   }
+  /* ---- 1.0.25: several notes at once, a page to land on, and motion that explains itself ---- */
+  .noteitem{position:relative;transition:background .16s ease,color .16s ease,transform .12s ease}
+  .noteitem:active{transform:scale(.985)}
+  .noteitem.selecting{gap:9px;padding-left:8px}
+  .noteitem .chk{width:19px;height:19px;flex:none;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;
+    transition:background .16s,border-color .16s,transform .16s}
+  .noteitem .chk svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .14s}
+  .noteitem .chk.on{background:var(--accent);border-color:var(--accent);transform:scale(1.04)}
+  .noteitem .chk.on svg{opacity:1}
+  .noteitem.on.selecting{background:var(--accent-soft);color:var(--ink)}
+  .noteitem.holding{background:var(--panel3)}
+  .noteitem.holding::after{content:"";position:absolute;right:9px;top:50%;width:15px;height:15px;margin-top:-7.5px;border-radius:50%;
+    border:2px solid var(--accent);border-right-color:transparent;animation:holdRing 2s linear forwards}
+  @keyframes holdRing{from{transform:rotate(0)}to{transform:rotate(1080deg)}}
+
+  #selbar{margin:6px 6px 8px;padding:8px;border:1px solid var(--glass-line);border-radius:16px;
+    background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(18px) saturate(150%);
+    box-shadow:0 14px 34px rgba(0,0,0,.30),inset 0 1px 0 var(--glass-hi);animation:selIn .2s cubic-bezier(.2,.9,.3,1)}
+  #selbar[hidden]{display:none}
+  #selbar .selhead{display:flex;align-items:center;gap:6px;padding:0 2px 7px}
+  #selbar .selhead .iconbtn{width:28px;height:28px}
+  #selbar .selhead span{font-size:12.5px;font-weight:650}
+  #selbar .selhead .grow{flex:1}
+  #selbar .selall{font-size:11.5px;font-weight:650;color:var(--accent);padding:4px 9px;border-radius:8px;border:1px solid var(--glass-line)}
+  #selbar .acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  #selbar .acts button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border-radius:11px;
+    border:1px solid var(--glass-line);background:var(--panel2);font-size:10.5px;font-weight:600;color:var(--dim);
+    transition:background .16s,color .16s,border-color .16s,transform .12s}
+  #selbar .acts button:hover{color:var(--accent);border-color:var(--accent);background:rgba(255,255,255,.08)}
+  #selbar .acts button:active{transform:scale(.96)}
+  #selbar .acts button[hidden]{display:none}
+  #selbar .acts svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  @keyframes selIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* the page the app opens on */
+  .empty{flex:1;min-height:0;display:block;overflow:auto;padding:26px 20px 30px;text-align:left}
+  .home{max-width:620px;margin:0 auto;animation:fadeUp .3s ease both}
+  .home-hello h2{margin:6px 0 4px;font-size:24px;letter-spacing:-.5px}
+  .home-hello p{margin:0;color:var(--dim2);font-size:12.5px}
+  .home-acts{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px}
+  .home-btn{display:flex;align-items:center;gap:7px;padding:10px 15px;border-radius:13px;border:1px solid var(--glass-line);
+    background:var(--panel2);font-size:13px;font-weight:600;box-shadow:inset 0 1px 0 var(--glass-hi);
+    transition:transform .12s,border-color .16s,color .16s,background .16s}
+  .home-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .home-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(255,255,255,.08)}
+  .home-btn:active{transform:scale(.97)}
+  .home-btn.primary{background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 76%,#000));border-color:var(--accent);color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 8px 20px color-mix(in srgb,var(--accent) 28%,transparent)}
+  .home-sec{margin:20px 2px 8px;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim2);font-weight:700}
+  .home-list{display:grid;gap:8px}
+  .homecard{display:grid;gap:3px;width:100%;text-align:left;padding:11px 13px;border-radius:15px;border:1px solid var(--glass-line);
+    background:var(--panel2);box-shadow:inset 0 1px 0 var(--glass-hi);transition:transform .14s,border-color .16s,background .16s}
+  .homecard:hover{border-color:var(--accent);background:rgba(255,255,255,.08)}
+  .homecard:active{transform:scale(.99)}
+  .homecard .hc-t{font-size:13.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .homecard .hc-s{font-size:11.5px;color:var(--dim2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .homecard .hc-w{font-size:10.5px;color:var(--dim2);opacity:.8}
+  .home-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .home-tip{margin:20px 0 0;font-size:11.5px;color:var(--dim2);line-height:1.65}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* motion that says what just happened */
+  #dlg:not([hidden]){animation:dlgIn .2s cubic-bezier(.2,.9,.3,1)}
+  @keyframes dlgIn{from{opacity:0;transform:translate(-50%,-48%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  #scrim:not([hidden]){animation:fadeIn .18s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  #panes,#inkwrap{animation:paneIn .24s ease both}
+  @keyframes paneIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .md img{animation:fadeUp .24s ease both}
+  .modes button,.iconbtn,.navrow,.folderrow,.tagchip{transition:background .16s,color .16s,border-color .16s,transform .12s}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+  }
 </style>
 </head>
 <body data-mode="split">
@@ -592,6 +665,23 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
       <button id="qDaily" title="Today's note">Today</button>
     </div>
     <div class="sidebody" id="sideBody"></div>
+    <div id="selbar" hidden>
+      <div class="selhead">
+        <button class="iconbtn" id="selDone" title="Done" aria-label="Done">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <span id="selCount">0 notes</span>
+        <div class="grow"></div>
+        <button class="selall" id="selAll">All</button>
+      </div>
+      <div class="acts">
+        <button data-sel="fav" title="Star them"><svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.9l6-.8z"/></svg><span>Star</span></button>
+        <button data-sel="folder" title="Move them to a folder"><svg viewBox="0 0 24 24"><path d="M3.5 6.5A1.5 1.5 0 0 1 5 5h4l2 2.5h8A1.5 1.5 0 0 1 20.5 9v9.5A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg><span>Folder</span></button>
+        <button data-sel="vault" title="Move them into the Vault"><svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg><span>Vault</span></button>
+        <button data-sel="trash" title="Move them to the trash"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg><span>Trash</span></button>
+        <button data-sel="restore" hidden title="Put them back"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/></svg><span>Restore</span></button>
+      </div>
+    </div>
     <div class="sidefoot">
       <span id="countLine">0 notes</span>
       <div class="grow"></div>
@@ -647,9 +737,10 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
           <button class="btn" id="inkErase" title="Erase whole strokes">Eraser</button>
           <button class="btn" id="inkUndo" title="Undo the last stroke">Undo</button>
           <button class="btn" id="inkClear" title="Empty the page">Clear</button>
+          <button class="btn primary" id="inkInsert" title="Put this drawing into the note">Add to note</button>
         </div>
         <canvas id="inkc"></canvas>
-        <div class="inkhint">Write with a finger, a stylus or a mouse. A stylus draws thicker where you press harder, and a hand resting on the screen is ignored while the pen is out.</div>
+        <div class="inkhint">Write with a finger, a stylus or a mouse. A stylus draws thicker where you press harder, a line is smoothed through the points the pen reports, and a hand resting on the screen is ignored while the pen is out. <b>Add to note</b> puts the drawing into the note's own text, then clears the page for the next one.</div>
       </div>
     </section>
 
@@ -699,7 +790,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.24';
+const VERSION = '1.0.25';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -799,6 +890,8 @@ const S = {
   paletteQuery: '',
   right: 'links',
   dirty: false,
+  sel: {},               // notes picked out of the list, by id
+  selMode: false,        // the bar of actions is showing
 };
 
 /* A record with ciphertext in it is a Vault note, whichever list a file happened to keep it in.
@@ -1065,7 +1158,10 @@ function renderSide() {
       : 'No notes here yet.') + '</div>';
   } else {
     list.forEach(n => {
-      h += '<button class="noteitem' + (S.current && S.current.id === n.id ? ' on' : '') + '" data-note="' + n.id + '">' +
+      const picked = !!S.sel[n.id];
+      const on = S.selMode ? picked : (S.current && S.current.id === n.id);
+      h += '<button class="noteitem' + (on ? ' on' : '') + (S.selMode ? ' selecting' : '') + '" data-note="' + n.id + '">' +
+        (S.selMode ? '<span class="chk' + (picked ? ' on' : '') + '"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>' : '') +
         (n.fav ? '<span class="st">★</span>' : '') +
         (n.ink && n.ink.s && n.ink.s.length ? '<span class="st" title="Handwriting">✎</span>' : '') +
         '<span class="t">' + esc(noteTitle(n)) + '</span>' +
@@ -1073,6 +1169,7 @@ function renderSide() {
     });
   }
   body.innerHTML = h;
+  renderSelBar();
   updateBack();
 }
 
@@ -1085,6 +1182,7 @@ function backTarget() {
   if (gw && !gw.hidden) return 'graph';
   const d = $('#dlg');
   if (d && !d.hidden) return 'dialog';
+  if (S.selMode) return 'select';
   const side = $('#side');
   if (side && side.classList.contains('open')) return 'side';
   if (S.folder || S.tag) return 'filter';
@@ -1102,6 +1200,7 @@ function goBack() {
   if (!t) return false;
   if (t === 'graph') closeGraph();
   else if (t === 'dialog') closeDialog();
+  else if (t === 'select') selExit();
   else if (t === 'side') closeSide();
   else {
     if (S.vault.key) lockVault(true);
@@ -1122,6 +1221,7 @@ function renderDoc() {
     $('#crumbs').innerHTML = '<b>UNote</b>';
     $('#rbody').innerHTML = '<div class="panehint">Open a note to see what links to it.</div>';
     $('#sWords').textContent = '0 words';
+    renderHome();
     return;
   }
   doc.hidden = false; empty.hidden = true;
@@ -1443,6 +1543,262 @@ function drawPalette() {
   }));
 }
 
+
+/* ---------------- more than one note at a time ---------------- */
+/* 1.0.25 - every action took the note you had open, so putting five notes into the Vault meant
+   opening five notes. A hold on a row now starts a selection: taps add and remove notes from it,
+   and one bar acts on all of them - star them, file them, seal them, bin them - in a single go. */
+const SEL_HOLD_MS = 2000;          /* the hold the gesture asks for, with a ring drawn while it runs */
+const selIds = () => Object.keys(S.sel).filter(id => S.sel[id]);
+const selNoteCount = () => selIds().length;
+
+function selReset() { S.sel = {}; }
+
+function selEnter(id) {
+  if (!S.selMode) { S.selMode = true; selReset(); }
+  if (id) S.sel[id] = 1;
+  renderSide();
+  updateBack();
+}
+
+function selExit() {
+  if (!S.selMode) return;
+  S.selMode = false;
+  selReset();
+  renderSide();
+  updateBack();
+}
+
+function selToggle(id) {
+  if (S.sel[id]) delete S.sel[id]; else S.sel[id] = 1;
+  if (!selNoteCount()) { selExit(); return; }
+  renderSide();
+}
+
+function selAll() {
+  const list = visibleNotes();
+  const had = selNoteCount();
+  const all = had && had >= list.length;
+  selReset();
+  if (!all) list.forEach(n => { S.sel[n.id] = 1; });
+  renderSide();
+}
+
+/* The bar says only what can be done to the notes in front of you: no Folder or Star in the Trash,
+   no Vault button while the Vault is what you are looking at. */
+function renderSelBar() {
+  const bar = $('#selbar');
+  if (!bar) return;
+  bar.hidden = !S.selMode;
+  if (!S.selMode) return;
+  const n = selNoteCount();
+  const c = $('#selCount');
+  if (c) c.textContent = n === 1 ? '1 note' : n + ' notes';
+  const all = $('#selAll');
+  const total = visibleNotes().length;
+  if (all) all.textContent = (n && n >= total) ? 'None' : 'All';
+  const bin = S.view === 'trash';
+  const show = (key, on) => {
+    const b = bar.querySelector('[data-sel="' + key + '"]');
+    if (b) b.hidden = !on;
+  };
+  show('fav', !bin);
+  show('folder', !bin);
+  show('vault', !bin && S.view !== 'vault');
+  show('trash', !bin);
+  show('restore', bin);
+}
+
+async function selDo(action) {
+  const notes = selIds().map(findNote).filter(Boolean);
+  if (!notes.length) { selExit(); return; }
+  const many = notes.length === 1 ? '1 note' : notes.length + ' notes';
+
+  if (action === 'folder') { selFolder(notes); return; }
+
+  if (action === 'vault') {
+    const plain = notes.filter(n => !n.vault);
+    if (!plain.length) { toast('Those notes are already in the Vault.'); selExit(); return; }
+    if (!S.vault.key) { unlockDialog(() => selVault(plain)); return; }
+    selVault(plain);
+    return;
+  }
+
+  if (action === 'fav') {
+    const want = !notes.every(n => n.fav);
+    for (const n of notes) { n.fav = want; await saveNote(n, { quiet: true }); }
+    selExit(); renderSide();
+    if (S.current) renderDoc();
+    toast(want ? 'Pinned ' + many + ' to favourites.' : 'Took ' + many + ' out of favourites.');
+    return;
+  }
+
+  if (action === 'trash') {
+    const at = nowMs();
+    for (const n of notes) { n.deleted = at; await saveNote(n, { quiet: true }); }
+    if (notes.some(n => S.current && S.current.id === n.id)) { S.current = null; }
+    selExit(); renderSide(); renderDoc();
+    toast('Moved ' + many + ' to the trash.');
+    return;
+  }
+
+  if (action === 'restore') {
+    for (const n of notes) { n.deleted = 0; await saveNote(n, { quiet: true }); }
+    selExit(); renderSide(); renderDoc();
+    toast('Restored ' + many + '.');
+  }
+}
+
+/* Several notes are sealed one after another and the Vault is read back once at the end: doing it
+   per note meant decrypting the whole Vault again for every note in the selection. */
+async function selVault(notes) {
+  if (!S.vault.key) return;
+  let done = 0;
+  for (const n of notes) {
+    const v = Object.assign({}, n, { vault: true, updated: nowMs(), deleted: 0 });
+    try { await saveNote(v, { quiet: true }); } catch (e) { continue; }
+    S.notes = S.notes.filter(x => x.id !== n.id);
+    if (S.current && S.current.id === n.id) S.current = v;
+    done++;
+  }
+  await decryptVault();
+  if (S.current && S.current.vault) S.current = findNote(S.current.id) || S.current;
+  selExit(); renderSide(); renderDoc();
+  toast(done ? 'Moved ' + (done === 1 ? '1 note' : done + ' notes') + ' into the Vault.'
+    : 'Nothing could be sealed - the Vault is closed.');
+}
+
+function selFolder(notes) {
+  const folders = Array.from(new Set(liveNotes().map(n => n.folder).filter(Boolean))).sort();
+  const d = dialog({
+    title: (notes.length === 1 ? '1 note' : notes.length + ' notes') + ' into a folder',
+    body: '<label class="field"><span>Folder</span><input id="sfName" placeholder="e.g. Work, Ideas, Recipes" maxlength="40"></label>' +
+      (folders.length
+        ? '<div class="hint" style="margin:-2px 0 8px">Or pick one of these:</div><div>' +
+          folders.map(f => '<button class="tagchip" data-sf="' + esc(f) + '">' + esc(f) + '</button>').join('') +
+          '<button class="tagchip" data-sf="">No folder</button></div>'
+        : '') +
+      '<div class="hint" style="margin:10px 0 0">Folders are one level, the same as everywhere else in the app.</div>',
+    foot: '<div class="grow"></div><button class="btn" data-close="1">Cancel</button><button class="btn primary" id="sfGo">Move</button>',
+  });
+  const apply = async name => {
+    for (const n of notes) { n.folder = name; await saveNote(n, { quiet: true }); }
+    closeDialog(); selExit(); renderSide();
+    if (S.current) renderDoc();
+    toast('Moved ' + (notes.length === 1 ? '1 note' : notes.length + ' notes') +
+      (name ? ' into ' + name : ' out of their folder') + '.');
+  };
+  $('#sfGo', d).addEventListener('click', () => apply($('#sfName', d).value.trim()));
+  $('#sfName', d).addEventListener('keydown', e => { if (e.key === 'Enter') apply($('#sfName', d).value.trim()); });
+  d.addEventListener('click', e => {
+    const chip = e.target.closest('[data-sf]');
+    if (chip) apply(chip.dataset.sf);
+  });
+  setTimeout(() => { const i = $('#sfName'); if (i) i.focus(); }, 40);
+}
+
+/* A hold, not a tap: two seconds with a ring drawn on the row, so nothing is ever selected by
+   accident while scrolling. A finger that travels before the ring closes was a scroll, and lets go. */
+let selTimer = 0, selRow = null, selAt = { x: 0, y: 0 }, selSuppress = false;
+
+function wireNotePress() {
+  const body = $('#sideBody');
+  if (!body || body.dataset.press) return;
+  body.dataset.press = '1';
+  const stop = () => {
+    clearTimeout(selTimer); selTimer = 0;
+    if (selRow) selRow.classList.remove('holding');
+    selRow = null;
+  };
+  body.addEventListener('pointerdown', e => {
+    const row = e.target.closest('[data-note]');
+    if (!row) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    selSuppress = false;
+    if (S.selMode) return;                 /* already selecting: a tap toggles, nothing to hold */
+    stop();
+    selRow = row; selAt = { x: e.clientX, y: e.clientY };
+    row.classList.add('holding');
+    selTimer = setTimeout(() => {
+      selTimer = 0;
+      const held = selRow ? selRow.dataset.note : '';
+      if (selRow) selRow.classList.remove('holding');
+      selRow = null;
+      selSuppress = true;
+      try { if (navigator.vibrate) navigator.vibrate(14); } catch (err) {}
+      selEnter(held);
+      toast('Tap notes to add them, then pick an action.', 2600);
+    }, SEL_HOLD_MS);
+  });
+  body.addEventListener('pointermove', e => {
+    if (!selTimer) return;
+    if (Math.abs(e.clientX - selAt.x) + Math.abs(e.clientY - selAt.y) > 10) stop();
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => body.addEventListener(ev, stop));
+  body.addEventListener('scroll', stop, { passive: true });
+
+  const bar = $('#selbar');
+  if (bar) {
+    bar.addEventListener('click', e => {
+      if (e.target.closest('#selDone')) { selExit(); return; }
+      if (e.target.closest('#selAll')) { selAll(); return; }
+      const b = e.target.closest('[data-sel]');
+      if (b) selDo(b.dataset.sel);
+    });
+  }
+}
+
+/* ---------------- the page the app opens on ---------------- */
+/* 1.0.25 - launch used to open the most recently changed note, which meant it opened whatever was
+   last touched whether or not that was what you wanted. The app now lands on a page: who you are
+   writing as, how much you have written, a way in to a new note or today's, the notes you were last
+   in and the ones you pinned. Nothing is open until you open it. */
+function renderHome() {
+  const box = $('#empty');
+  if (!box) return;
+  const live = sortNotes(liveNotes());
+  const recent = live.slice(0, 4);
+  const favs = live.filter(n => n.fav).slice(0, 8);
+  const hour = new Date().getHours();
+  const hi = hour < 5 ? 'Still awake' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const vaultN = S.vault.on ? (S.vault.key ? S.vault.plain.length : S.vault.notes.length) : 0;
+  const bits = [live.length + (live.length === 1 ? ' note' : ' notes')];
+  if (vaultN) bits.push(vaultN + ' in the Vault');
+  if (recent[0]) bits.push('last written ' + fmtWhen(recent[0].updated).toLowerCase());
+
+  const card = n => '<button class="homecard" data-note="' + n.id + '">' +
+    '<span class="hc-t">' + esc(noteTitle(n)) + '</span>' +
+    '<span class="hc-s">' + esc(String(n.body || '').replace(/\s+/g, ' ').trim().slice(0, 110) || 'Empty note') + '</span>' +
+    '<span class="hc-w">' + esc(fmtWhen(n.updated)) + '</span></button>';
+
+  box.dataset.home = '1';
+  box.innerHTML =
+    '<div class="home">' +
+      '<div class="home-hello"><h2>' + hi + '</h2><p>' + esc(bits.join(' \u00b7 ')) + '</p></div>' +
+      '<div class="home-acts">' +
+        '<button class="home-btn primary" data-home="new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New note</button>' +
+        '<button class="home-btn" data-home="daily"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>Today</button>' +
+        '<button class="home-btn" data-home="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Search</button>' +
+      '</div>' +
+      (recent.length ? '<div class="home-sec">Pick up where you left off</div><div class="home-list">' + recent.map(card).join('') + '</div>' : '') +
+      (favs.length ? '<div class="home-sec">Favourites</div><div class="home-chips">' +
+        favs.map(n => '<button class="tagchip" data-note="' + n.id + '">' + esc(noteTitle(n)) + '</button>').join('') + '</div>' : '') +
+      '<p class="home-tip">Hold a note in the list for two seconds and a ring closes around it - then tap the others you want, and the bar that appears can star them, file them, put them in the Vault or send them to the trash all at once.</p>' +
+    '</div>';
+
+  box.onclick = e => {
+    const h = e.target.closest('[data-home]');
+    if (h) {
+      if (h.dataset.home === 'new') { closeSide(); createNote({}); }
+      else if (h.dataset.home === 'daily') dailyNote();
+      else if (h.dataset.home === 'search') palette('search');
+      return;
+    }
+    const n = e.target.closest('[data-note]');
+    if (n) openNote(n.dataset.note);
+  };
+}
+
 /* UNote - part 3: dialogs, the Vault, export/transfer, updates, boot. */
 /* ---------------- dialog plumbing ---------------- */
 let dlgOnClose = null;
@@ -1559,8 +1915,10 @@ function finishOnboarding() {
   kvSet('settings', S.settings);
   seedWelcome();                       // a note list that came from a backup is left alone
   renderSide();
-  const first = sortNotes(liveNotes()).find(n => !n.deleted);
-  if (first) { S.current = first; renderDoc(); } else renderDoc();
+  /* 1.0.25 - the first screen after onboarding is the page the app opens on, with the Welcome
+     note sitting on it to tap: nothing lands you in the middle of a note you did not ask for. */
+  S.current = null;
+  renderDoc();
 }
 
 /* ---------------- PIN entry with no keyboard ---------------- */
@@ -2630,8 +2988,10 @@ async function boot() {
   renderSide();
   if (!S.settings.onboarded) { onboard(); }
   else {
-    const first = sortNotes(liveNotes()).find(n => !n.deleted);
-    if (first) { S.current = first; renderDoc(); } else renderDoc();
+    /* 1.0.25 - the app lands on its own page now instead of the top note. Opening whatever was
+       last touched meant launch put somebody else's words in front of you. */
+    S.current = null;
+    renderDoc();
   }
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
@@ -2667,6 +3027,7 @@ async function boot() {
   }));
   $('#menuBtn').addEventListener('click', () => { $('#side').classList.toggle('open'); updateBack(); });
   $('#sideClose').addEventListener('click', closeSide);
+  wireNotePress();
 
   /* 1.0.23 - the back arrow in the top bar, and the same thing for the phone's own back key
      (MainActivity asks window.UNoteBack before it closes the app). */
@@ -2684,7 +3045,11 @@ async function boot() {
       S.view = v; S.folder = ''; S.tag = ''; renderSide(); return;
     }
     const note = e.target.closest('[data-note]');
-    if (note) { openNote(note.dataset.note); return; }
+    if (note) {
+      if (selSuppress) { selSuppress = false; return; }   /* the click a finished hold lets go of */
+      if (S.selMode) { selToggle(note.dataset.note); return; }
+      openNote(note.dataset.note); return;
+    }
     const fold = e.target.closest('[data-folder]');
     if (fold) { S.folder = fold.dataset.folder || ''; S.tag = ''; renderSide(); return; }
     const tag = e.target.closest('[data-tag]');
@@ -2701,7 +3066,8 @@ async function boot() {
   $('#qFolder').addEventListener('click', folderDialog);
   $('#qDaily').addEventListener('click', dailyNote);
   $('#btnPalette').addEventListener('click', () => palette('command'));
-  $('#emptyNew').addEventListener('click', () => createNote({}));
+  const emptyNew = $('#emptyNew');          /* the landing page replaces this button */
+  if (emptyNew) emptyNew.addEventListener('click', () => createNote({}));
 
   // modes
   $$('#modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
@@ -2793,6 +3159,7 @@ async function boot() {
     else if (e.key === 'Escape') {
       if (!$('#graphwrap').hidden) closeGraph();
       else if (!$('#dlg').hidden) closeDialog();
+      else if (S.selMode) selExit();
       else if ($('#side').classList.contains('open')) closeSide();
       else suggestClose();
     }
@@ -3274,6 +3641,7 @@ const INK = {
   penAt: 0,          // when the stylus was last seen, so a palm can be told from a finger
   redo: [],
   wired: false,
+  seg: 0,            // how much of the live stroke has been resampled and drawn already
 };
 
 function inkCanvas() { return document.getElementById('inkc'); }
@@ -3288,37 +3656,87 @@ function inkData(n) {
   return n.ink;
 }
 
-function inkColour(stroke, cv) {
+function inkColour(stroke, cv, ink) {
   if (!stroke.c || stroke.c === 'ink') {
+    if (ink) return ink;                       /* a picture is painted off-screen, where the page's
+                                                  own colour cannot be asked for */
     try { return getComputedStyle(cv).color || '#111'; } catch (e) { return '#111'; }
   }
   return stroke.c;
 }
 
-/* One stroke, scaled from page units by `sc`. A stylus reports how hard it is pressed and the line
-   thickens where it does; a finger or a mouse reports nothing useful, so the line keeps its width. */
-function inkDrawStroke(g, stroke, sc) {
-  const p = stroke && stroke.p;
-  if (!p || p.length < 2) return;
-  const q = stroke.q || null;
+/* 1.0.25 - a stroke used to be a run of straight pieces between the points the pen reported, and
+   the line changed width in steps wherever the pressure did. The points are now read as the curve
+   they describe: Catmull-Rom through them, sampled about every page unit, with the width eased from
+   one sample to the next. A fast line curls instead of cornering, and a pressed line thickens
+   smoothly. Nothing about how a stroke is stored has changed, so old drawings look better too. */
+const INK_STEP = 1.4;                 // page units between drawn samples
+const inkWeight = p => (isFinite(p) ? 0.55 + 0.85 * clamp(p, 0, 1) : 1);
+
+function inkRawPoints(stroke) {
+  const p = stroke && stroke.p, q = stroke && stroke.q;
+  if (!p) return [];
+  const out = [];
+  for (let i = 0; i < p.length; i += 2) out.push({ x: p[i], y: p[i + 1], p: q ? Number(q[i / 2]) : NaN });
+  return out;
+}
+
+/* One piece of the curve, from raw[i] to raw[i+1], close enough together that a straight line
+   between two samples cannot be seen. */
+function inkSegment(raw, i, out) {
+  const p0 = raw[i - 1] || raw[i], p1 = raw[i], p2 = raw[i + 1], p3 = raw[i + 2] || raw[i + 1];
+  const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  const n = Math.max(1, Math.min(40, Math.ceil(d / INK_STEP)));
+  for (let k = 1; k <= n; k++) {
+    const t = k / n, t2 = t * t, t3 = t2 * t;
+    out.push({
+      x: 0.5 * (2 * p1.x + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+      y: 0.5 * (2 * p1.y + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+      p: isFinite(p1.p) ? (isFinite(p2.p) ? p1.p + (p2.p - p1.p) * t : p1.p) : p2.p,
+    });
+  }
+  return out;
+}
+
+function inkPaintPoints(g, stroke, sc, pts, ink) {
   const base = Math.max(0.6, (stroke.w || 3) * sc);
-  g.strokeStyle = inkColour(stroke, g.canvas);
+  g.strokeStyle = inkColour(stroke, g.canvas, ink);
   g.fillStyle = g.strokeStyle;
   g.lineCap = 'round';
   g.lineJoin = 'round';
-  if (p.length === 2) {
+  if (pts.length === 1) {
     g.beginPath();
-    g.arc(p[0] * sc, p[1] * sc, Math.max(0.7, base / 2), 0, Math.PI * 2);
+    g.arc(pts[0].x * sc, pts[0].y * sc, Math.max(0.7, base * inkWeight(pts[0].p) / 2), 0, Math.PI * 2);
     g.fill();
     return;
   }
-  for (let i = 2; i < p.length; i += 2) {
-    const pr = q ? Number(q[i / 2]) : NaN;
-    g.lineWidth = isFinite(pr) && pr > 0 ? base * (0.55 + 0.8 * Math.min(1, pr)) : base;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    g.lineWidth = base * (inkWeight(a.p) + inkWeight(b.p)) / 2;
     g.beginPath();
-    g.moveTo(p[i - 2] * sc, p[i - 1] * sc);
-    g.lineTo(p[i] * sc, p[i + 1] * sc);
+    g.moveTo(a.x * sc, a.y * sc);
+    g.lineTo(b.x * sc, b.y * sc);
     g.stroke();
+  }
+}
+
+function inkDrawStroke(g, stroke, sc, ink) {
+  const raw = inkRawPoints(stroke);
+  if (!raw.length) return;
+  if (raw.length < 2) { inkPaintPoints(g, stroke, sc, raw, ink); return; }
+  const pts = [{ x: raw[0].x, y: raw[0].y, p: raw[0].p }];
+  for (let i = 0; i < raw.length - 1; i++) inkSegment(raw, i, pts);
+  inkPaintPoints(g, stroke, sc, pts, ink);
+}
+
+/* While the pen is moving only the new piece is resampled and drawn, so the screen keeps up with a
+   fast hand and the finished stroke looks the same as the one being drawn. */
+function inkDrawTail(g, stroke, sc) {
+  const raw = inkRawPoints(stroke);
+  while (INK.seg < raw.length - 1) {
+    const pts = inkSegment(raw, INK.seg, [{ x: raw[INK.seg].x, y: raw[INK.seg].y, p: raw[INK.seg].p }]);
+    inkPaintPoints(g, stroke, sc, pts);
+    INK.seg++;
   }
 }
 
@@ -3408,6 +3826,7 @@ function inkStart(e) {
   INK.cur = st;
   INK.down = true;
   INK.redo = [];
+  INK.seg = 0;
   inkDrawStroke(cv.getContext('2d'), st, cv.clientWidth / (d.w || cv.clientWidth));
   inkBarState();
 }
@@ -3432,9 +3851,8 @@ function inkMove(e) {
     if (Math.abs(p[p.length - 2] - x) < 0.4 && Math.abs(p[p.length - 1] - y) < 0.4) continue;
     p.push(x, y);
     if (st.q) st.q.push(isFinite(pr) ? pr : 0.5);
-    const last = p.length;
-    inkDrawStroke(g, { c: st.c, w: st.w, p: p.slice(last - 4), q: st.q ? st.q.slice(last / 2 - 2) : null }, sc);
   }
+  inkDrawTail(g, st, sc);
 }
 
 function inkEnd() {
@@ -3445,6 +3863,7 @@ function inkEnd() {
   if (!st || !S.current) return;
   const d = inkData(S.current);
   if (st.p.length < 2) d.s.pop();
+  inkPaintAll();                 /* the settled curve, drawn once through every point */
   inkDirty();
   inkBarState();
 }
@@ -3507,6 +3926,9 @@ function inkWire() {
   cv.addEventListener('pointercancel', inkEnd);
   cv.addEventListener('pointerleave', e => { if (INK.down) inkEnd(e); });
   cv.addEventListener('contextmenu', e => e.preventDefault());
+  /* A stylus that reports faster than the screen refreshes has more to say than pointermove hears:
+     read its raw updates where the phone offers them, and the curve keeps the shape of the hand. */
+  if ('onpointerrawupdate' in cv) cv.addEventListener('pointerrawupdate', e => { if (INK.down) inkMove(e); });
   try { new ResizeObserver(() => inkPaintAll()).observe(cv); } catch (e) { window.addEventListener('resize', inkPaintAll); }
 
   const bar = document.getElementById('inkbar');
@@ -3524,6 +3946,56 @@ function inkWire() {
   if (un) un.addEventListener('click', inkUndo);
   const cl = document.getElementById('inkClear');
   if (cl) cl.addEventListener('click', inkClear);
+  const ins = document.getElementById('inkInsert');
+  if (ins) ins.addEventListener('click', inkInsertIntoNote);
+}
+
+/* The drawing becomes part of the note: it is painted once onto a picture with the page's own
+   colours behind it - so it reads in either theme, and it is sealed with the note when the note is
+   in the Vault - written into the note's body like any other picture, and the page is cleared so
+   the next drawing starts empty. Undo puts the strokes back. */
+async function inkInsertIntoNote() {
+  const n = S.current;
+  if (!n) { toast('Open a note first.'); return; }
+  const d = inkData(n);
+  if (!d || !d.s.length) { toast('Draw something first, then add it to the note.'); return; }
+  const cv = inkCanvas();
+  const w = Math.max(1, Math.round(cv.clientWidth || 640));
+  const h = Math.max(1, Math.round(cv.clientHeight || 480));
+  const out = document.createElement('canvas');
+  out.width = Math.round(w * 2);
+  out.height = Math.round(h * 2);
+  const page = getComputedStyle(document.body);
+  const inkInk = page.color || '#eef1f8';          // 'ink' strokes follow the note's text colour
+  const g = out.getContext('2d');
+  g.fillStyle = page.backgroundColor || '#0b0d14';
+  g.fillRect(0, 0, out.width, out.height);
+  const sc = out.width / (d.w || w);
+  for (const st of d.s) inkDrawStroke(g, st, sc, inkInk);
+
+  let blob = null;
+  try { blob = await new Promise(res => out.toBlob(res, 'image/png')); } catch (e) { blob = null; }
+  if (!blob) { toast('Could not put the drawing in a picture.'); return; }
+
+  const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  try {
+    const rec = await saveAttachment(new File([blob], 'Handwriting ' + stamp + '.png', { type: 'image/png' }), n);
+    const body = String(n.body || '').replace(/\s+$/, '');
+    n.body = (body ? body + '\n\n' : '') + '![](unote-media:' + rec.id + ')\n';
+    await saveNote(n);
+    if ($('#ed')) $('#ed').value = n.body;
+    if ($('#pv')) { $('#pv').innerHTML = md(n.body); hydrateMedia($('#pv')); }
+    INK.redo = d.s.slice();
+    d.s = [];
+    inkPaintAll();
+    inkBarState();
+    renderSide();
+    refreshDocMeta();
+    if (document.body.dataset.mode === 'draw') setMode(window.innerWidth < 600 ? 'read' : 'split');
+    toast('The handwriting is part of the note now.');
+  } catch (e) {
+    toast('Could not add it to the note' + (e && e.message ? ': ' + e.message : '.'));
+  }
 }
 
 /* Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z work on the ink while the Draw pane is the one on screen. */

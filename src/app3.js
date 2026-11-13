@@ -114,8 +114,10 @@ function finishOnboarding() {
   kvSet('settings', S.settings);
   seedWelcome();                       // a note list that came from a backup is left alone
   renderSide();
-  const first = sortNotes(liveNotes()).find(n => !n.deleted);
-  if (first) { S.current = first; renderDoc(); } else renderDoc();
+  /* 1.0.25 - the first screen after onboarding is the page the app opens on, with the Welcome
+     note sitting on it to tap: nothing lands you in the middle of a note you did not ask for. */
+  S.current = null;
+  renderDoc();
 }
 
 /* ---------------- PIN entry with no keyboard ---------------- */
@@ -1185,8 +1187,10 @@ async function boot() {
   renderSide();
   if (!S.settings.onboarded) { onboard(); }
   else {
-    const first = sortNotes(liveNotes()).find(n => !n.deleted);
-    if (first) { S.current = first; renderDoc(); } else renderDoc();
+    /* 1.0.25 - the app lands on its own page now instead of the top note. Opening whatever was
+       last touched meant launch put somebody else's words in front of you. */
+    S.current = null;
+    renderDoc();
   }
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
@@ -1222,6 +1226,7 @@ async function boot() {
   }));
   $('#menuBtn').addEventListener('click', () => { $('#side').classList.toggle('open'); updateBack(); });
   $('#sideClose').addEventListener('click', closeSide);
+  wireNotePress();
 
   /* 1.0.23 - the back arrow in the top bar, and the same thing for the phone's own back key
      (MainActivity asks window.UNoteBack before it closes the app). */
@@ -1239,7 +1244,11 @@ async function boot() {
       S.view = v; S.folder = ''; S.tag = ''; renderSide(); return;
     }
     const note = e.target.closest('[data-note]');
-    if (note) { openNote(note.dataset.note); return; }
+    if (note) {
+      if (selSuppress) { selSuppress = false; return; }   /* the click a finished hold lets go of */
+      if (S.selMode) { selToggle(note.dataset.note); return; }
+      openNote(note.dataset.note); return;
+    }
     const fold = e.target.closest('[data-folder]');
     if (fold) { S.folder = fold.dataset.folder || ''; S.tag = ''; renderSide(); return; }
     const tag = e.target.closest('[data-tag]');
@@ -1256,7 +1265,8 @@ async function boot() {
   $('#qFolder').addEventListener('click', folderDialog);
   $('#qDaily').addEventListener('click', dailyNote);
   $('#btnPalette').addEventListener('click', () => palette('command'));
-  $('#emptyNew').addEventListener('click', () => createNote({}));
+  const emptyNew = $('#emptyNew');          /* the landing page replaces this button */
+  if (emptyNew) emptyNew.addEventListener('click', () => createNote({}));
 
   // modes
   $$('#modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
@@ -1348,6 +1358,7 @@ async function boot() {
     else if (e.key === 'Escape') {
       if (!$('#graphwrap').hidden) closeGraph();
       else if (!$('#dlg').hidden) closeDialog();
+      else if (S.selMode) selExit();
       else if ($('#side').classList.contains('open')) closeSide();
       else suggestClose();
     }
