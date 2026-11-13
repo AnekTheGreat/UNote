@@ -451,9 +451,10 @@ function patchNotesDialog(justUpdated) {
   read(otaBase())
     .then(paint)
     .catch(() => read('').then(data => {
+      paint(data);                       /* paint first: it writes over the body, so a line put in
+                                            before it would be gone by the time it could be read */
       if (body) body.insertAdjacentHTML('afterbegin',
         '<div class="hint" style="margin:0 0 10px">No answer from the site, so these are the notes that came with the app.</div>');
-      paint(data);
     }))
     .catch(() => { body.innerHTML = '<div class="hint">The notes could not be read right now. They live in updates.json next to the app.</div>'; });
 }
