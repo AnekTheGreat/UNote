@@ -1,0 +1,73 @@
+name: Publish the page
+
+# Over-the-air updates are read from https://anekthegreat.github.io/UNote/, and until now only the
+# Patch workflow (which needs a dev/patch-<version>.py) and the nightly Sync workflow put anything
+# there. A release committed straight to main therefore sat in the repo with no way to reach the
+# phones. This publishes what is on main, unchanged, after the same checks the repo already runs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version this publishes, e.g. 1.0.25 - leave empty for what updates.json says'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: index.html is what src/ builds
+        run: python3 dev/build.py --check
+
+      - name: The versions agree
+        env:
+          V: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 - "$V" <<'PY'
+          import json, re, sys
+          want = (sys.argv[1] or '').strip()
+          page = open('index.html', encoding='utf-8').read()
+          sw = open('sw.js', encoding='utf-8').read()
+          data = json.load(open('updates.json', encoding='utf-8'))
+          js = re.search(r"const VERSION = '([0-9.]+)'", page).group(1)
+          cache = re.search(r"unote-v([0-9.]+)", sw).group(1)
+          print('page', js, '| cache', cache, '| updates.json', data['version'])
+          if not js == cache == data['version']:
+              sys.exit('the three versions have to agree')
+          if want and want != js:
+              sys.exit('%s is not the version on the page (%s)' % (want, js))
+          if js not in [h['version'] for h in data.get('history', [])]:
+              sys.exit('updates.json has no history entry for %s' % js)
+          print('publishing %s' % js)
+          PY
+
+      - name: Stage the page
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cp index.html sw.js updates.json manifest.webmanifest \
+             icon.svg icon-maskable.svg privacy.html _site/
+          ls -l _site
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
