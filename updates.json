@@ -1,16 +1,23 @@
 {
   "app": "UNote",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "date": "2026-11-13",
   "notes": [
-    "More than one note at a time: hold a note in the list for two seconds and a ring closes around the row - then every tap adds or removes a note from the selection, and the bar that appears acts on all of them at once. Star them, move them into a folder, put them in the Vault, or send them to the trash together. The back button or the x in the bar lets go. A finger that starts scrolling before the ring closes was scrolling, not holding, so nothing is selected by accident.",
-    "The app no longer opens on the note at the top of the list. It lands on a page of its own: a greeting, how many notes you have and when the last one was written, New note, Today and Search, the notes you were last in, and the ones you pinned. Nothing is open until you open it, so launch cannot put somebody else's words in front of you again.",
-    "Handwriting is drawn as the curve the pen actually described rather than as straight pieces between the points it reported. The line is resampled about every page unit, so a quick stroke curls instead of cornering, and the width eases from one sample to the next, so pressing harder thickens the line smoothly instead of in steps. The page also reads a stylus's raw updates where the phone offers them, which keeps the shape of a fast hand. Old drawings are painted by the same code, so they look better too.",
-    "A drawing can now be part of the note it was drawn in. Add to note, at the right of the pen bar, paints the page onto a picture with the note's own colours behind it (so it reads in either theme, and is sealed with the note when the note is in the Vault), writes it into the note's text where any other picture goes, then clears the page so the next drawing starts empty. Undo brings the strokes back if you change your mind.",
-    "The pieces of the page move instead of jumping: a sheet settles in and fades behind it, a pane lifts a couple of pixels when it changes, the selection bar slides up, rows and buttons press when a finger lands on them, and the drawing and the pictures fade in as they arrive. All of that turns itself off when the phone asks for less motion.",
-    "The launcher icon on the home screen is the artwork the Play listing shows, at last: the small u at the foot of the page is a letter rather than two circles and a slit, and the mark is the same size inside Android's 72dp safe window as it is in the listing's own picture. My Hub draws the app's icon straight from the phone, so its row follows from the same fix."
+    "A long press is the app's own again. Holding a key on the PIN pad used to bring Android's Copy, Share and Select all menu down over the pad, with a pair of selection handles sitting on the keys; nothing on the app's own screen is text to select now, which also keeps a two second hold on a note a hold on a note. The words inside a note, and the text you type, are still selectable and copyable.",
+    "The pad answers under the finger instead of after it: a key dips as it is pressed, and taps are no longer held back while the browser waits to see whether a second one is coming.",
+    "A dot pops as it fills, and a wrong PIN shakes the dots and the keys as well as turning the message red, then clears the entry so the next try starts from nothing. Every one of those moves is off when the phone asks for reduced motion."
   ],
   "history": [
+    {
+      "version": "1.0.26",
+      "date": "2026-11-13",
+      "title": "The pad keeps its own long press, and answers at once",
+      "notes": [
+        "A long press is the app's own again. Holding a key on the PIN pad used to bring Android's Copy, Share and Select all menu down over the pad, with a pair of selection handles sitting on the keys; nothing on the app's own screen is text to select now, which also keeps a two second hold on a note a hold on a note. The words inside a note, and the text you type, are still selectable and copyable.",
+        "The pad answers under the finger instead of after it: a key dips as it is pressed, and taps are no longer held back while the browser waits to see whether a second one is coming.",
+        "A dot pops as it fills, and a wrong PIN shakes the dots and the keys as well as turning the message red, then clears the entry so the next try starts from nothing. Every one of those moves is off when the phone asks for reduced motion."
+      ]
+    },
     {
       "version": "1.0.25",
       "date": "2026-11-13",

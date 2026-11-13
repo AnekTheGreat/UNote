@@ -627,6 +627,27 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
   }
+
+/* 1.0.26 - a long press belongs to the app. It holds a note for two seconds to start a selection and
+   it types a PIN on keys that are not text, and Android answers a long press on text with its own
+   Copy / Share / Select all menu and a pair of selection handles over whatever is under the finger.
+   So the app's chrome is not selectable, and the words in a note still are. */
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#ed,#title,textarea,input,#pv,#rbody,.pinmsg{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{touch-action:manipulation}
+
+/* The pad answers under the finger rather than after it: a key dips as it is pressed, a dot pops as
+   it fills, and a wrong PIN turns the message red and shakes the dots and the keys. */
+.pinpad button{transition:transform .11s ease,background .15s ease,border-color .15s ease,color .15s ease}
+.pinpad button:active{transform:scale(.94);border-color:var(--accent);color:var(--accent)}
+.pindots i{transition:transform .16s cubic-bezier(.2,.9,.3,1),background .16s ease,border-color .16s ease}
+.pindots i.f{transform:scale(1.14)}
+.pindots.err,.pinpad.err{animation:pinShake .34s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes pinShake{10%,90%{transform:translateX(-1px)}30%,70%{transform:translateX(3px)}50%{transform:translateX(-3px)}}
+@media (prefers-reduced-motion:reduce){
+  .pindots.err,.pinpad.err{animation:none}
+  .pinpad button,.pindots i{transition:none}
+}
 </style>
 </head>
 <body data-mode="split">

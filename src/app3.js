@@ -45,12 +45,25 @@ function pinDialog(o) {
     $('#pinDots').innerHTML = [0, 1, 2, 3, 4, 5].map(i => '<i class="' + (i < pin.length ? 'f' : '') + '"></i>').join('');
   };
   const msg = (t, bad) => { const m = $('#pinMsg'); m.textContent = t || ''; m.classList.toggle('bad', !!bad); };
+  /* 1.0.26 - a wrong PIN is answered the same way wherever it comes from, the keys or the
+     number row of a keyboard: the message turns red, the dots and the pad shake, and the
+     entry is cleared so the next try starts from nothing. */
+  const ui = {
+    msg: msg,
+    reset: () => { pin = ''; dots(); },
+    bad: t => {
+      msg(t, true);
+      const parts = [$('#pinDots'), $('#pinPad')].filter(Boolean);
+      parts.forEach(el => el.classList.add('err'));
+      setTimeout(() => { pin = ''; dots(); parts.forEach(el => el.classList.remove('err')); }, 560);
+    },
+  };
   dots();
   $('#pinPad').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const key = b.dataset.d;
     if (key === 'del') pin = pin.slice(0, -1);
-    else if (key === 'ok') { if (pin.length >= 4) o.onPin(pin, { msg: msg, reset: () => { pin = ''; dots(); }, bad: t => { msg(t, true); $('#pinDots').classList.add('err'); setTimeout(() => { pin = ''; dots(); $('#pinDots').classList.remove('err'); }, 500); } }); }
+    else if (key === 'ok') { if (pin.length >= 4) o.onPin(pin, ui); }
     else if (pin.length < 8) pin += key;
     dots();
   });
@@ -58,7 +71,7 @@ function pinDialog(o) {
     if ($('#dlg').hidden) { document.removeEventListener('keydown', onKey); return; }
     if (/^\d$/.test(e.key) && pin.length < 8) { pin += e.key; dots(); }
     else if (e.key === 'Backspace') { pin = pin.slice(0, -1); dots(); }
-    else if (e.key === 'Enter' && pin.length >= 4) { o.onPin(pin, { msg: msg, reset: () => { pin = ''; dots(); }, bad: t => { msg(t, true); $('#pinDots').classList.add('err'); setTimeout(() => { pin = ''; dots(); $('#pinDots').classList.remove('err'); }, 500); } }); }
+    else if (e.key === 'Enter' && pin.length >= 4) { o.onPin(pin, ui); }
   });
   return d;
 }
@@ -1157,6 +1170,14 @@ function applySafeInsets() {
   d.setProperty('--safe-r', num(nf.safeRight) + 'px');
 }
 if (typeof window !== 'undefined') window.UNoteInsets = applySafeInsets;   // the app says when
+
+/* 1.0.26 - a long press is the app's own gesture now, so the browser's menu for selected text is not
+   wanted over a button or a key. It stays for words somebody may want to copy out of a note. */
+document.addEventListener('contextmenu', e => {
+  const t = e.target;
+  if (t && t.closest && t.closest('input,textarea,#ed,#title,#pv,#rbody')) return;
+  e.preventDefault();
+});
 
 async function boot() {
   await openDB();
