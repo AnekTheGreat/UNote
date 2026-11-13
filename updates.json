@@ -1,12 +1,20 @@
 {
   "app": "UNote",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "date": "2026-11-13",
   "notes": [
-    "The keyboard no longer covers the note. The page now ends where the keys begin instead of running on underneath them, so the toolbar, the word count and the last line all stay in sight.",
-    "The line you are typing keeps a line of air above the keys rather than sitting against them, the way an OxygenOS note does, and the bottom rail steps out of the way while the keys are up."
+    "The keyboard, properly this time. From Android 15 the phone stopped resizing the app when the keys appear and simply lays them over the bottom of it, so the app now shortens its own page above the keys - the same thing older Android did for it. The line you are on stays in sight with a line of air beneath it.",
+    "This one is in the app itself, not only in the page: install the new APK from the releases page for it to take effect. The notes you already have stay exactly where they are."
   ],
   "history": [
+    {
+      "version": "1.0.31",
+      "date": "2026-11-13",
+      "notes": [
+        "The keyboard, properly this time. From Android 15 the phone stopped resizing the app when the keys appear and simply lays them over the bottom of it, so the app now shortens its own page above the keys - the same thing older Android did for it. The line you are on stays in sight with a line of air beneath it.",
+        "This one is in the app itself, not only in the page: install the new APK from the releases page for it to take effect. The notes you already have stay exactly where they are."
+      ]
+    },
     {
       "version": "1.0.30",
       "date": "2026-11-13",

@@ -9,6 +9,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 
 import android.content.Intent;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,6 +17,9 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.webkit.WebView;
 
 import androidx.core.graphics.Insets;
@@ -62,6 +66,8 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCallback;
     private PermissionRequest micRequest;
     private Insets lastBars;
+    // How far the WebView has been shortened for the keyboard, in real pixels.
+    private int kbPx;
     // The phone's own margins, in CSS pixels, handed to the page (see tellPageInsets).
     private int insetTop, insetBottom, insetLeft, insetRight;
 
@@ -201,20 +207,72 @@ public class MainActivity extends Activity {
         /* Only from Android 15 is the window really drawn behind those bars. Below that the phone
            lays the app out between them already, and the insets describe bars the page is not
            under, so applying them there would leave a second empty strip. */
-        if (Build.VERSION.SDK_INT >= 35) {
-            ViewCompat.setOnApplyWindowInsetsListener(web, (v, insets) -> {
-                lastBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
-                        | WindowInsetsCompat.Type.displayCutout()
-                        | WindowInsetsCompat.Type.ime());
+        /* The keyboard is not part of the page. Up to Android 14 the phone shrinks the window for
+           the keys, and the page never has to know. From Android 15 the app is drawn to the whole
+           screen - edge to edge is forced, and windowSoftInputMode="adjustResize" no longer resizes
+           anything - so the keys are simply laid over the bottom of the page: the last lines of a
+           note sat underneath them, and nothing on the page could tell, because the page's own view
+           of the screen had not changed at all. So the app does what the system used to do and makes
+           the WebView shorter than the keys. Two numbers are used, whichever is the bigger: the
+           keyboard inset Android reports, and how much of its visible frame the window has lost,
+           which has meant the same thing since the first Android. Handing both to the page as CSS
+           padding was never going to work - padding under a full-height box moves nothing. */
+        final View decor = getWindow().getDecorView();
+        decor.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        Rect frame = new Rect();
+                        decor.getWindowVisibleDisplayFrame(frame);
+                        int hidden = decor.getHeight() - frame.bottom;
+                        if (hidden < decor.getHeight() * 0.22) {
+                            hidden = 0;                 // a navigation bar is not a keyboard
+                        }
+                        applyKeyboardInset(hidden);
+                    }
+                });
+
+        ViewCompat.setOnApplyWindowInsetsListener(web, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            if (Build.VERSION.SDK_INT >= 35) {
+                // While the keys are up the app has already been shortened, so the bar underneath
+                // them is not added a second time.
+                lastBars = Insets.of(bars.left, bars.top, bars.right,
+                        ime.bottom > 0 ? 0 : bars.bottom);
                 tellPageInsets();
-                return insets;
-            });
-            ViewCompat.requestApplyInsets(web);
-        }
+            }
+            applyKeyboardInset(ime.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(web);
         if (state != null) {
             web.restoreState(state);
         } else {
             web.loadUrl(HOME);
+        }
+    }
+
+    /** Make the WebView shorter than the keyboard, so the page is a page the size of the part of the
+     *  screen you can actually see. */
+    private void applyKeyboardInset(int px) {
+        if (web == null) {
+            return;
+        }
+        if (px < 0) {
+            px = 0;
+        }
+        if (px == kbPx) {
+            return;
+        }
+        kbPx = px;
+        ViewGroup.LayoutParams lp = web.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
+            m.bottomMargin = px;
+            web.setLayoutParams(m);
+            tellPageInsets();        // the bottom inset is the keys now, not the row of buttons
         }
     }
 
@@ -230,7 +288,7 @@ public class MainActivity extends Activity {
             density = 1f;
         }
         insetTop = Math.round(lastBars.top / density);
-        insetBottom = Math.round(lastBars.bottom / density);
+        insetBottom = kbPx > 0 ? 0 : Math.round(lastBars.bottom / density);
         insetLeft = Math.round(lastBars.left / density);
         insetRight = Math.round(lastBars.right / density);
         web.evaluateJavascript(
