@@ -421,15 +421,18 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   .md code,.md pre,.md th{background:var(--panel2)}
   /* the shelf itself: one card per app, a tile, a line, one door */
   .appcard{display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:9px;border-radius:18px;
-    border:1px solid var(--glass-line);background:var(--panel2);
-    box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 26px rgba(0,0,0,.16);backdrop-filter:blur(14px) saturate(140%)}
+    border:1px solid var(--glass-line);background:var(--panel2);color:var(--ink);text-decoration:none;
+    box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 26px rgba(0,0,0,.16);backdrop-filter:blur(14px) saturate(140%);
+    transition:transform .12s ease,border-color .16s ease,background .16s ease}
+  .appcard:hover{border-color:var(--accent);background:rgba(255,255,255,.07)}
+  .appcard:active{transform:scale(.99)}
   .appcard .tile{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none;
     font-weight:700;font-size:16px;color:#fff;background:linear-gradient(160deg,var(--accent),#4b34c9);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.36),0 8px 18px rgba(76,52,201,.32)}
   .appcard .grow{flex:1;min-width:0}
   .appcard b{display:block;font-size:13.5px;font-weight:650}
   .appcard small{display:block;font-size:11.5px;color:var(--dim2);line-height:1.4;margin-top:2px}
-  .appcard .go{flex:none;text-decoration:none;border:1px solid var(--glass-line);border-radius:12px;padding:8px 13px;
+  .appcard .go{flex:none;pointer-events:none;text-decoration:none;border:1px solid var(--glass-line);border-radius:12px;padding:8px 13px;
     font-size:12.5px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.07);box-shadow:inset 0 1px 0 var(--glass-hi)}
   .appcard .go:hover{border-color:var(--accent);color:var(--accent)}
 
@@ -588,8 +591,10 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   .home{max-width:620px;margin:0 auto;animation:fadeUp .3s ease both}
   .home-hello h2{margin:6px 0 4px;font-size:24px;letter-spacing:-.5px}
   .home-hello p{margin:0;color:var(--dim2);font-size:12.5px}
-  .home-acts{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px}
-  .home-btn{display:flex;align-items:center;gap:7px;padding:10px 15px;border-radius:13px;border:1px solid var(--glass-line);
+  .home-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 6px}
+  .home-btn.primary{grid-column:1 / -1}
+  .home-apps{margin-top:18px;width:100%}
+  .home-btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:13px;border:1px solid var(--glass-line);
     background:var(--panel2);font-size:13px;font-weight:600;box-shadow:inset 0 1px 0 var(--glass-hi);
     transition:transform .12s,border-color .16s,color .16s,background .16s}
   .home-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -612,7 +617,12 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
      chevron used to sit on screen with nothing behind it to go back to. */
   #top [hidden]{display:none}
   .home-chips{display:flex;flex-wrap:wrap;gap:6px}
-  .home-tip{margin:20px 0 0;font-size:11.5px;color:var(--dim2);line-height:1.65}
+  /* A wide window has room for one row of three; a phone gives New note the row to itself and puts
+     the other two side by side, which is a shape instead of a gap with Search under it. */
+  @media (min-width:601px){
+    .home-acts{grid-template-columns:repeat(3,1fr)}
+    .home-btn.primary{grid-column:auto}
+  }
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   /* motion that says what just happened */
@@ -816,7 +826,7 @@ button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{to
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.28';
+const VERSION = '1.0.29';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1831,7 +1841,13 @@ function renderHome() {
       (recent.length ? '<div class="home-sec">Pick up where you left off</div><div class="home-list">' + recent.map(card).join('') + '</div>' : '') +
       (favs.length ? '<div class="home-sec">Favourites</div><div class="home-chips">' +
         favs.map(n => '<button class="tagchip" data-note="' + n.id + '">' + esc(noteTitle(n)) + '</button>').join('') + '</div>' : '') +
-      '<p class="home-tip">Hold a note in the list for two seconds and a ring closes around it - then tap the others you want, and the bar that appears can star them, file them, put them in the Vault or send them to the trash all at once.</p>' +
+      /* 1.0.29 - the paragraph that walked through the long press is gone: three lines of small
+         print at the foot of the page, where the list already says what it needs to. In its place
+         is the shelf, which is a door rather than a lecture. */
+      '<button class="listrow home-apps" data-apps="1"><span class="grow">' +
+        '<span class="lr-t">Other apps</span>' +
+        '<span class="lr-s">FamTM, SideCut, MeasureT, My Hub and UJournal</span></span>' +
+        '<span class="chev">\u203a</span></button>' +
     '</div>';
 
   box.onclick = e => {
@@ -2253,10 +2269,13 @@ function otherAppsDialog() {
     cls: 'wide',
     title: 'Other apps',
     body: '<div class="hint" style="margin:0 0 12px">Made by the same person who made UNote. Not one of them asks you to sign in, and none of them is watching.</div>' +
+      /* 1.0.29 - the row is the link. It used to be a card with a small Open button in it, and a tap
+         anywhere else in the row did nothing, which reads as a row that will not open the app. */
       OTHER_APPS.map(a =>
-        '<div class="appcard"><div class="tile">' + esc(a[3] || a[0].charAt(0)) + '</div>' +
+        '<a class="appcard" href="' + esc(a[2]) + '" target="_blank" rel="noopener">' +
+        '<div class="tile">' + esc(a[3] || a[0].charAt(0)) + '</div>' +
         '<span class="grow"><b>' + esc(a[0]) + '</b><small>' + esc(a[1]) + '</small></span>' +
-        '<a class="go" href="' + esc(a[2]) + '" target="_blank" rel="noopener">Open</a></div>').join('') +
+        '<span class="go">Open</span></a>').join('') +
       '<div class="hint" style="margin:12px 0 0">A tap leaves for the browser or the Play Store and comes back to this note.</div>',
     foot: '<div class="grow"></div><button class="btn primary" data-close="1">Done</button>',
   });

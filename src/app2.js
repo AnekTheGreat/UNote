@@ -733,7 +733,13 @@ function renderHome() {
       (recent.length ? '<div class="home-sec">Pick up where you left off</div><div class="home-list">' + recent.map(card).join('') + '</div>' : '') +
       (favs.length ? '<div class="home-sec">Favourites</div><div class="home-chips">' +
         favs.map(n => '<button class="tagchip" data-note="' + n.id + '">' + esc(noteTitle(n)) + '</button>').join('') + '</div>' : '') +
-      '<p class="home-tip">Hold a note in the list for two seconds and a ring closes around it - then tap the others you want, and the bar that appears can star them, file them, put them in the Vault or send them to the trash all at once.</p>' +
+      /* 1.0.29 - the paragraph that walked through the long press is gone: three lines of small
+         print at the foot of the page, where the list already says what it needs to. In its place
+         is the shelf, which is a door rather than a lecture. */
+      '<button class="listrow home-apps" data-apps="1"><span class="grow">' +
+        '<span class="lr-t">Other apps</span>' +
+        '<span class="lr-s">FamTM, SideCut, MeasureT, My Hub and UJournal</span></span>' +
+        '<span class="chev">\u203a</span></button>' +
     '</div>';
 
   box.onclick = e => {

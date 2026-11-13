@@ -1,12 +1,21 @@
 {
   "app": "UNote",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "date": "2026-11-13",
   "notes": [
-    "The keyboard no longer sits on top of what you are writing. The app draws to the whole screen and the phone lays its keys over the bottom of that, so the writing box kept its full height behind them and the line being typed was underneath, out of sight and impossible to scroll to. The page now measures the part of the screen the keys are covering and keeps the note above it, and it nudges the caret back into view as the box gets shorter.",
-    "Only while a field is focused: a pinch zoom or the browser's own bar sliding away is not treated as a keyboard, and the sheet for a rename or a PIN stays above the keys too."
+    "Every app on the shelf opens when it is tapped, not only the small Open button in the corner of its row: the whole row is the link now, and it dips under the finger like the rest of the app.",
+    "The line of small print under the recent notes is gone. The three buttons at the top of the page share their row instead of leaving Search sitting on its own under a gap, and Other apps is at the foot of the page where it can be found without going into Settings."
   ],
   "history": [
+    {
+      "version": "1.0.29",
+      "date": "2026-11-13",
+      "title": "Every app on the shelf opens, and a tidier page",
+      "notes": [
+        "Every app on the shelf opens when it is tapped, not only the small Open button in the corner of its row: the whole row is the link now, and it dips under the finger like the rest of the app.",
+        "The line of small print under the recent notes is gone. The three buttons at the top of the page share their row instead of leaving Search sitting on its own under a gap, and Other apps is at the foot of the page where it can be found without going into Settings."
+      ]
+    },
     {
       "version": "1.0.28",
       "date": "2026-11-13",

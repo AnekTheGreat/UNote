@@ -402,10 +402,13 @@ function otherAppsDialog() {
     cls: 'wide',
     title: 'Other apps',
     body: '<div class="hint" style="margin:0 0 12px">Made by the same person who made UNote. Not one of them asks you to sign in, and none of them is watching.</div>' +
+      /* 1.0.29 - the row is the link. It used to be a card with a small Open button in it, and a tap
+         anywhere else in the row did nothing, which reads as a row that will not open the app. */
       OTHER_APPS.map(a =>
-        '<div class="appcard"><div class="tile">' + esc(a[3] || a[0].charAt(0)) + '</div>' +
+        '<a class="appcard" href="' + esc(a[2]) + '" target="_blank" rel="noopener">' +
+        '<div class="tile">' + esc(a[3] || a[0].charAt(0)) + '</div>' +
         '<span class="grow"><b>' + esc(a[0]) + '</b><small>' + esc(a[1]) + '</small></span>' +
-        '<a class="go" href="' + esc(a[2]) + '" target="_blank" rel="noopener">Open</a></div>').join('') +
+        '<span class="go">Open</span></a>').join('') +
       '<div class="hint" style="margin:12px 0 0">A tap leaves for the browser or the Play Store and comes back to this note.</div>',
     foot: '<div class="grow"></div><button class="btn primary" data-close="1">Done</button>',
   });
