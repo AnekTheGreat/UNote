@@ -348,7 +348,9 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   #app{grid-template-columns:1fr}
   #rail{
     position:fixed;bottom:0;left:0;right:0;height:calc(var(--rail) + var(--safe-b));flex-direction:row;justify-content:space-around;
-    padding:0 6px var(--safe-b);border-right:0;border-top:1px solid var(--line);z-index:30;
+    /* 1.0.34 - the right-hand 64px belongs to the back key, so the rail's own icons stop
+       short of it: the settings gear sits beside the key, never under it. */
+    padding:0 64px var(--safe-b) 6px;border-right:0;border-top:1px solid var(--line);z-index:30;
     background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(14px);
   }
   .rspacer,#railLock{display:none}
@@ -386,6 +388,16 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
       var(--bg);
   }
   #rail{background:rgba(255,255,255,.045);border-right:1px solid var(--glass-line);backdrop-filter:blur(22px) saturate(150%)}
+  /* 1.0.34 - the back key: right-hand edge, above the rail, above dialogs (41) and the
+     search sheet (41), below a toast (60). The rail gives up its right-hand corner so the
+     key never sits on top of the settings icon. */
+  #railBack{position:fixed;right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(7px + var(--safe-b));
+    z-index:46;width:46px;height:calc(var(--rail) - 12px);min-height:40px;display:grid;place-items:center;
+    border-radius:14px;border:1px solid var(--glass-line);color:var(--ink);
+    background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(20px) saturate(150%)}
+  #railBack svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #railBack:active{transform:scale(.94)}
+  #railBack.dim{opacity:.45}
   #side,#right{background:var(--glass);border-color:var(--glass-line);backdrop-filter:blur(24px) saturate(155%)}
   #main{background:transparent}
   .rbtn{border-radius:14px}
@@ -536,7 +548,6 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   }
   /* with a Back button on screen, the menu button steps aside so the two never crowd a phone */
   @media (max-width:600px){
-    #top.has-back #menuBtn{display:none}
   }
   /* small tablet, or an unfolded foldable held in portrait: rail and sidebar, no third pane */
   @media (min-width:601px) and (max-width:899px){
@@ -741,6 +752,14 @@ button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{to
     </button>
   </aside>
 
+  <!-- 1.0.34 - THE WAY BACK IS A KEY, NOT A HEADER BUTTON.
+       It sits at the bottom right where a thumb already is, it is drawn above the dialogs
+       and the search sheet, and nothing hides it: not a popup, not the keys coming up.
+       It is dim when there is nowhere to go back to, and it never leaves the screen. -->
+  <button id="railBack" hidden title="Back" aria-label="Back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+
   <aside id="side">
     <div class="sidehead">
       <div>
@@ -784,9 +803,6 @@ button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{to
 
   <main id="main">
     <header id="top">
-      <button class="iconbtn" id="btnBack" hidden title="Back" aria-label="Back">
-        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
-      </button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
@@ -883,7 +899,7 @@ button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{to
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.33';
+const VERSION = '1.0.34';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1287,14 +1303,25 @@ function backTarget() {
   return '';
 }
 function updateBack() {
-  const b = $('#btnBack'), top = $('#top');
+  /* 1.0.34 - the back key is permanent. It used to appear in the top bar only when there was
+     somewhere to go, which meant a screen with no header arrow had no visible way back at all.
+     Now the key is always drawn, and only its weight changes: full when back will do
+     something, dimmed when you are already home. */
+  const b = $('#railBack');
   const show = !!backTarget();
-  if (b) b.hidden = !show;
-  if (top) top.classList.toggle('has-back', show);
+  if (b) { b.hidden = false; b.classList.toggle('dim', !show); }
 }
 function goBack() {
   const t = backTarget();
-  if (!t) return false;
+  if (!t) {
+    /* 1.0.34 - on the home screen the key still answers: it puts the library back the way it
+       opens, rather than doing nothing under a finger that expects it to act. */
+    if (S.vault.key) lockVault(true);
+    S.view = 'notes'; S.folder = ''; S.tag = ''; S.current = null;
+    try { renderDoc(); } catch (_e0) {}
+    renderSide(); updateBack();
+    return true;
+  }
   if (t === 'graph') closeGraph();
   else if (t === 'dialog') closeDialog();
   else if (t === 'select') selExit();
@@ -3465,7 +3492,10 @@ async function boot() {
 
   /* 1.0.23 - the back arrow in the top bar, and the same thing for the phone's own back key
      (MainActivity asks window.UNoteBack before it closes the app). */
-  $('#btnBack').addEventListener('click', goBack);
+  /* 1.0.34 - the key on the rail is the way back now; the phone's own key still runs the same
+     function, so the two can never disagree about where back goes. */
+  const _rb = $('#railBack');
+  if (_rb) _rb.addEventListener('click', () => { goBack(); });
   window.UNoteBack = goBack;
   updateBack();
 

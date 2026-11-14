@@ -1533,7 +1533,10 @@ async function boot() {
 
   /* 1.0.23 - the back arrow in the top bar, and the same thing for the phone's own back key
      (MainActivity asks window.UNoteBack before it closes the app). */
-  $('#btnBack').addEventListener('click', goBack);
+  /* 1.0.34 - the key on the rail is the way back now; the phone's own key still runs the same
+     function, so the two can never disagree about where back goes. */
+  const _rb = $('#railBack');
+  if (_rb) _rb.addEventListener('click', () => { goBack(); });
   window.UNoteBack = goBack;
   updateBack();
 

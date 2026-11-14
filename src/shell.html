@@ -348,7 +348,9 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   #app{grid-template-columns:1fr}
   #rail{
     position:fixed;bottom:0;left:0;right:0;height:calc(var(--rail) + var(--safe-b));flex-direction:row;justify-content:space-around;
-    padding:0 6px var(--safe-b);border-right:0;border-top:1px solid var(--line);z-index:30;
+    /* 1.0.34 - the right-hand 64px belongs to the back key, so the rail's own icons stop
+       short of it: the settings gear sits beside the key, never under it. */
+    padding:0 64px var(--safe-b) 6px;border-right:0;border-top:1px solid var(--line);z-index:30;
     background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(14px);
   }
   .rspacer,#railLock{display:none}
@@ -386,6 +388,16 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
       var(--bg);
   }
   #rail{background:rgba(255,255,255,.045);border-right:1px solid var(--glass-line);backdrop-filter:blur(22px) saturate(150%)}
+  /* 1.0.34 - the back key: right-hand edge, above the rail, above dialogs (41) and the
+     search sheet (41), below a toast (60). The rail gives up its right-hand corner so the
+     key never sits on top of the settings icon. */
+  #railBack{position:fixed;right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(7px + var(--safe-b));
+    z-index:46;width:46px;height:calc(var(--rail) - 12px);min-height:40px;display:grid;place-items:center;
+    border-radius:14px;border:1px solid var(--glass-line);color:var(--ink);
+    background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(20px) saturate(150%)}
+  #railBack svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #railBack:active{transform:scale(.94)}
+  #railBack.dim{opacity:.45}
   #side,#right{background:var(--glass);border-color:var(--glass-line);backdrop-filter:blur(24px) saturate(155%)}
   #main{background:transparent}
   .rbtn{border-radius:14px}
@@ -536,7 +548,6 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   }
   /* with a Back button on screen, the menu button steps aside so the two never crowd a phone */
   @media (max-width:600px){
-    #top.has-back #menuBtn{display:none}
   }
   /* small tablet, or an unfolded foldable held in portrait: rail and sidebar, no third pane */
   @media (min-width:601px) and (max-width:899px){
@@ -741,6 +752,14 @@ button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{to
     </button>
   </aside>
 
+  <!-- 1.0.34 - THE WAY BACK IS A KEY, NOT A HEADER BUTTON.
+       It sits at the bottom right where a thumb already is, it is drawn above the dialogs
+       and the search sheet, and nothing hides it: not a popup, not the keys coming up.
+       It is dim when there is nowhere to go back to, and it never leaves the screen. -->
+  <button id="railBack" hidden title="Back" aria-label="Back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+
   <aside id="side">
     <div class="sidehead">
       <div>
@@ -784,9 +803,6 @@ button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{to
 
   <main id="main">
     <header id="top">
-      <button class="iconbtn" id="btnBack" hidden title="Back" aria-label="Back">
-        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
-      </button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>

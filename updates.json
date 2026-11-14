@@ -1,11 +1,18 @@
 {
   "app": "UNote",
-  "version": "1.0.33",
-  "date": "2026-11-13",
+  "version": "1.0.34",
+  "date": "2026-11-14",
   "notes": [
-    "The line you are typing is kept in sight the way UJournal does it. The phone only ever brought it to the very edge of the keyboard; now every keystroke and every move of the caret scrolls the note so that line sits a couple of lines up, with the air under it, whether the keys arrive as a shorter page in the app or as visualViewport in a browser."
+    "The way back is a key of its own at the bottom right, where a thumb already is. It is always on screen - over a settings sheet, over the search list, with nothing hidden behind it - and it is dimmed only when you are already on the home screen, where it still answers by putting the library back the way it opens. The small arrow that used to appear in the top bar is gone; one way back, in the same place every time."
   ],
   "history": [
+    {
+      "version": "1.0.34",
+      "date": "2026-11-14",
+      "notes": [
+        "The way back is a key of its own at the bottom right, where a thumb already is. It is always on screen - over a settings sheet, over the search list, with nothing hidden behind it - and it is dimmed only when you are already on the home screen, where it still answers by putting the library back the way it opens. The small arrow that used to appear in the top bar is gone; one way back, in the same place every time."
+      ]
+    },
     {
       "version": "1.0.33",
       "date": "2026-11-13",

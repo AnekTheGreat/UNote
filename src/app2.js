@@ -122,14 +122,25 @@ function backTarget() {
   return '';
 }
 function updateBack() {
-  const b = $('#btnBack'), top = $('#top');
+  /* 1.0.34 - the back key is permanent. It used to appear in the top bar only when there was
+     somewhere to go, which meant a screen with no header arrow had no visible way back at all.
+     Now the key is always drawn, and only its weight changes: full when back will do
+     something, dimmed when you are already home. */
+  const b = $('#railBack');
   const show = !!backTarget();
-  if (b) b.hidden = !show;
-  if (top) top.classList.toggle('has-back', show);
+  if (b) { b.hidden = false; b.classList.toggle('dim', !show); }
 }
 function goBack() {
   const t = backTarget();
-  if (!t) return false;
+  if (!t) {
+    /* 1.0.34 - on the home screen the key still answers: it puts the library back the way it
+       opens, rather than doing nothing under a finger that expects it to act. */
+    if (S.vault.key) lockVault(true);
+    S.view = 'notes'; S.folder = ''; S.tag = ''; S.current = null;
+    try { renderDoc(); } catch (_e0) {}
+    renderSide(); updateBack();
+    return true;
+  }
   if (t === 'graph') closeGraph();
   else if (t === 'dialog') closeDialog();
   else if (t === 'select') selExit();
