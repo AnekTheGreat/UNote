@@ -159,9 +159,11 @@ body[data-mode="read"] #panes{grid-template-columns:1fr;grid-template-rows:minma
 /* 1.0.17 - the Draw pane: a page under the title, the pens above it. */
 #inkwrap{display:none;flex:1;flex-direction:column;gap:10px;min-height:0;padding-bottom:18px}
 body[data-mode="draw"] #panes{display:none}
+/* 1.0.36 - one word for "the keys are up", whichever way the phone handed them over. The rail and
+   the back key step out of the way, and the room they were holding goes to the writing instead. */
+body.keys #rail,body.keys #railBack{display:none}
 @media (max-width:600px){
-  /* the rail runs along the bottom of the screen, which is where the keys are now */
-  body.kb-up #rail,body.kb-native #rail{display:none}
+  body.keys #main{padding-bottom:0}
 }
 body[data-mode="draw"] #inkwrap{display:flex}
 #inkbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
@@ -243,7 +245,7 @@ body[data-mode="draw"] #inkwrap{display:flex}
    centred on the whole viewport, so with the keyboard up its own foot - and often the very field
    being typed into - sat behind the keys while its head stayed up near the top. It is centred on
    the part of the page the keys leave, and keeps to that height. */
-body.kb-up #dlg,body.kb-native #dlg{
+body.keys #dlg{
   top:calc((100dvh - max(var(--safe-b,0px),var(--kb,0px))) / 2);
   max-height:calc(100dvh - var(--safe-t) - max(var(--safe-b,0px),var(--kb,0px)) - 14px);
 }
@@ -692,9 +694,11 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
      instead of against it, and the end of a note can be read without scrolling it out of the way. */
   #ed{padding:0 0 1.6em}
   #pv{padding-bottom:1.6em}
-  body.kb-up #ed,body.kb-native #ed{padding-bottom:max(96px,22vh)}
-  body.kb-up #pv,body.kb-native #pv{padding-bottom:max(96px,22vh)}
-  body.kb-up #doc,body.kb-native #doc{padding-bottom:0}
+  /* 1.0.36 - a real band of air under the line being typed, not a sliver. The caret is scrolled to
+     sit inside this band, so the words you are writing are a whole space above the keys the way a
+     note app keeps them, and the end of a note can be read without being pulled to the edge. */
+  body.keys #ed,body.keys #pv{padding-bottom:max(120px,22vh)}
+  body.keys #doc{padding-bottom:0}
   .home-chips{display:flex;flex-wrap:wrap;gap:6px}
   /* A wide window has room for one row of three; a phone gives New note the row to itself and puts
      the other two side by side, which is a shape instead of a gap with Search under it. */
@@ -914,7 +918,7 @@ button,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.pill,.crumbs{to
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.35';
+const VERSION = '1.0.36';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -3347,6 +3351,14 @@ function seedWelcome() {
 
 function closeSide() { $('#side').classList.remove('open'); updateBack(); }
 
+/* 1.0.36 - the keys are up in one of three ways, and the page only ever measured the first: a
+   browser takes the height out of visualViewport and leaves the page's own height alone, an app can
+   report them as a bottom inset, or an app can make the page itself shorter for them. In the last
+   two nothing here knew, so there was no band of air under the line being written, the rail stayed
+   along the bottom of the phone, and the caret was left wherever it landed. One class, keys, says
+   they are up now, and paintKeys is the only place that says it. */
+const KEYSTATE = { keys: 0, app: 0, fit: 0, rest: 0 };
+
 /* 1.0.23 - the room above the page. The app hands over the real heights of the phone's bars in
    CSS pixels; a browser supplies env(); a copy running under an older app gets nothing at all,
    which is what left the top row under the clock. So a phone always keeps at least a status
@@ -3364,12 +3376,10 @@ function applySafeInsets() {
   /* A bottom inset the height of a keyboard is the keyboard. The page gives the writing a line
      of air above it and lets the bottom rail go, and --kb carries the same number for the
      rules that ask how much of the screen the keys took. */
-  const keys = bottom > 120;
-  document.body.classList.toggle('kb-native', keys);
-  if (keys) d.setProperty('--kb', bottom + 'px');
-  else if (d.getPropertyValue('--kb') === bottom + 'px') d.removeProperty('--kb');
-  /* 1.0.33 - and the line being typed is moved up into the room, not just left above the keys. */
-  if (keys) setTimeout(keepCaretVisible, 30);
+  /* 1.0.36 - an app that hands the keys over as a bottom inset gets that number taken off the
+     page's height here; the class, the air and the caret are paintKeys' business now. */
+  KEYSTATE.app = bottom > 120 ? bottom : 0;
+  paintKeys();
   d.setProperty('--safe-l', num(nf.safeLeft) + 'px');
   d.setProperty('--safe-r', num(nf.safeRight) + 'px');
 }
@@ -3406,15 +3416,35 @@ function caretY(ed) {
   m.remove();
   return y;
 }
+function keysAreUp() { return KEYSTATE.keys > 0 || KEYSTATE.app > 0 || KEYSTATE.fit > 0; }
+function paintKeys() {
+  const d = document.documentElement.style;
+  const cover = Math.max(KEYSTATE.keys, KEYSTATE.app);   // keyboards laid over the page
+  if (cover > 0) d.setProperty('--kb', cover + 'px');
+  else d.removeProperty('--kb');
+  document.body.classList.toggle('keys', keysAreUp());
+  if (keysAreUp()) nudgeCaret();
+}
+function nudgeCaret() {
+  /* the keys slide in over a few frames, and a scroll set against a box that is still changing its
+     height leaves the caret at the edge again: measure once they have settled too */
+  (nudgeCaret.timers || []).forEach(clearTimeout);
+  const go = () => { const a = document.activeElement; if (a && a.id === 'ed') keepCaretVisible(); };
+  nudgeCaret.timers = [0, 90, 240, 500].map(ms => setTimeout(go, ms));
+}
 function keepCaretVisible() {
   const ed = $('#ed');
   if (!ed || document.activeElement !== ed) return;
   let y = 0;
   try { y = caretY(ed); } catch (e) { return; }
   const lh = parseFloat(getComputedStyle(ed).lineHeight) || 24;
+  /* 1.0.36 - with the keys up the line you are on keeps three lines of air under it, so it sits a
+     whole space above them instead of on the last pixel the page has; without them it keeps the
+     couple of lines a long note reads with. */
+  const air = lh * (keysAreUp() ? 3 : 2.5);
   const top = ed.scrollTop, h = ed.clientHeight;
   if (y < top) ed.scrollTop = Math.max(0, y - lh * 0.5);
-  else if (y + lh * 2.5 > top + h) ed.scrollTop = y + lh * 2.5 - h;   // the line you are on, with air under it
+  else if (y + air > top + h) ed.scrollTop = y + air - h;   // the line you are on, with air under it
 }
 /* 1.0.35 - the field the keys are for is brought into the part of the page that is left. The note
    editor keeps its caret in sight already; this is for the fields inside a sheet - a folder name, a
@@ -3433,10 +3463,9 @@ function keepFieldVisible(el) {
 function watchKeyboard() {
   const vv = window.visualViewport;
   /* 1.0.33 - the line you are on is kept in sight while you type it, the way the journal does it:
-     whichever way the keys arrive - visualViewport in a browser, the app shortening the WebView on
-     Android 15 - every keystroke and every move of the caret scrolls the note so that line sits a
-     couple of lines above the bottom, with the air from the stylesheet under it. Relying on the
-     phone to do it only ever brought the line to the very edge. */
+     every keystroke and every move of the caret scrolls the note so that line sits above the bottom,
+     with the air from the stylesheet under it. Relying on the phone to do it only ever brought the
+     line to the very edge. */
   const nudge = () => { const a = document.activeElement; if (a && a.id === 'ed') keepCaretVisible(); };
   if (!watchKeyboard.wired) {
     watchKeyboard.wired = 1;
@@ -3444,25 +3473,36 @@ function watchKeyboard() {
     document.addEventListener('selectionchange', nudge);
     document.addEventListener('keyup', nudge);
   }
-  if (!vv) return;
-  const root = document.documentElement;
-  const apply = () => {
-    let cover = 0;
-    if (typingSomewhere() && (!vv.scale || vv.scale < 1.01)) {
-      cover = Math.round(window.innerHeight - vv.height - (vv.offsetTop || 0));
-      if (cover < 60) cover = 0;        // a rounded edge or a browser bar sliding is not a keyboard
+  const measure = () => {
+    /* the page at its own size, remembered only while nothing is being typed into: the keys - or
+       the app shortening the page for them - must never pass for the page's normal height */
+    if (!typingSomewhere()) KEYSTATE.rest = window.innerHeight;
+    let cover = 0, fit = 0;
+    const zoomed = vv && vv.scale && vv.scale > 1.01;
+    if (typingSomewhere() && !zoomed) {
+      if (vv) {
+        cover = Math.round(window.innerHeight - vv.height - (vv.offsetTop || 0));
+        if (cover < 60) cover = 0;      // a rounded edge or a browser bar sliding is not a keyboard
+      }
+      if (!cover && KEYSTATE.rest) {    // the page itself got shorter: the app is holding the keys
+        const lost = Math.round(KEYSTATE.rest - window.innerHeight);
+        if (lost > 120 && lost < window.innerHeight * 0.75) fit = lost;
+      }
     }
-    root.style.setProperty('--kb', cover + 'px');
-    root.classList.toggle('kb-up', cover > 0);
-    if (cover > 0) keepCaretVisible();
+    KEYSTATE.keys = cover;              // keys over the page: taken off its height
+    KEYSTATE.fit = fit;                 // page already shortened: what is missing is the air
+    paintKeys();
   };
-  vv.addEventListener('resize', apply);
-  vv.addEventListener('scroll', apply);
-      /* the keys arrive after the tap: give them their moment, then leave the field they are for
-       where it can be seen */
-    document.addEventListener('focusin', e => setTimeout(() => { apply(); keepFieldVisible(e.target); }, 80));
-  document.addEventListener('focusout', () => setTimeout(apply, 80));
-  apply();
+  const root = document.documentElement;
+  root.classList.remove('kb-up', 'kb-native');   // the old words, gone from a page that moved on
+  if (vv) { vv.addEventListener('resize', measure); vv.addEventListener('scroll', measure); }
+  window.addEventListener('resize', measure);
+  window.addEventListener('orientationchange', () => setTimeout(() => { KEYSTATE.rest = window.innerHeight; measure(); }, 400));
+  /* the keys arrive after the tap: give them their moment, then leave the field they are for where
+     it can be seen */
+  document.addEventListener('focusin', e => setTimeout(() => { measure(); keepFieldVisible(e.target); }, 80));
+  document.addEventListener('focusout', () => setTimeout(measure, 80));
+  measure();
 }
 
 /* 1.0.26 - a long press is the app's own gesture now, so the browser's menu for selected text is not

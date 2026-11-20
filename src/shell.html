@@ -159,9 +159,11 @@ body[data-mode="read"] #panes{grid-template-columns:1fr;grid-template-rows:minma
 /* 1.0.17 - the Draw pane: a page under the title, the pens above it. */
 #inkwrap{display:none;flex:1;flex-direction:column;gap:10px;min-height:0;padding-bottom:18px}
 body[data-mode="draw"] #panes{display:none}
+/* 1.0.36 - one word for "the keys are up", whichever way the phone handed them over. The rail and
+   the back key step out of the way, and the room they were holding goes to the writing instead. */
+body.keys #rail,body.keys #railBack{display:none}
 @media (max-width:600px){
-  /* the rail runs along the bottom of the screen, which is where the keys are now */
-  body.kb-up #rail,body.kb-native #rail{display:none}
+  body.keys #main{padding-bottom:0}
 }
 body[data-mode="draw"] #inkwrap{display:flex}
 #inkbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
@@ -243,7 +245,7 @@ body[data-mode="draw"] #inkwrap{display:flex}
    centred on the whole viewport, so with the keyboard up its own foot - and often the very field
    being typed into - sat behind the keys while its head stayed up near the top. It is centred on
    the part of the page the keys leave, and keeps to that height. */
-body.kb-up #dlg,body.kb-native #dlg{
+body.keys #dlg{
   top:calc((100dvh - max(var(--safe-b,0px),var(--kb,0px))) / 2);
   max-height:calc(100dvh - var(--safe-t) - max(var(--safe-b,0px),var(--kb,0px)) - 14px);
 }
@@ -692,9 +694,11 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
      instead of against it, and the end of a note can be read without scrolling it out of the way. */
   #ed{padding:0 0 1.6em}
   #pv{padding-bottom:1.6em}
-  body.kb-up #ed,body.kb-native #ed{padding-bottom:max(96px,22vh)}
-  body.kb-up #pv,body.kb-native #pv{padding-bottom:max(96px,22vh)}
-  body.kb-up #doc,body.kb-native #doc{padding-bottom:0}
+  /* 1.0.36 - a real band of air under the line being typed, not a sliver. The caret is scrolled to
+     sit inside this band, so the words you are writing are a whole space above the keys the way a
+     note app keeps them, and the end of a note can be read without being pulled to the edge. */
+  body.keys #ed,body.keys #pv{padding-bottom:max(120px,22vh)}
+  body.keys #doc{padding-bottom:0}
   .home-chips{display:flex;flex-wrap:wrap;gap:6px}
   /* A wide window has room for one row of three; a phone gives New note the row to itself and puts
      the other two side by side, which is a shape instead of a gap with Search under it. */

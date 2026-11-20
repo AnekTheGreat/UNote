@@ -1,13 +1,25 @@
 {
   "app": "UNote",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "date": "2026-11-20",
   "notes": [
+    "The line you are typing now sits a clear space above the keyboard. A phone can hand the keys over in three different ways - a browser shrinking what it shows, the app shortening the page for them, or the keys simply laid over the top - and the page only ever measured the first, so on a phone that shortens itself the writing was left on the last pixel before the keys. All three are measured now, and the line you are on keeps three lines of air under it, the way a note app keeps it.",
+    "The bottom rail and the back key step out of the way while the keys are up, and the room they were holding goes to the note instead, so there is more page to write on with the keyboard open.",
+    "This one is in the page itself, so it arrives by itself the next time UNote opens - no new APK needed.",
     "The keyboard finally keeps out of the way of what you are typing. A sheet with a field in it - a folder name, a reminder, a search, an import code - now sits in the part of the screen the keys leave free instead of being centred on the whole screen behind them, and the field you tapped is scrolled up into view. No more typing a line you cannot read.",
     "The app answers in the hand. Every tap that does something gives one short tick; a note held to start a selection, a note sent to the trash, a wrong PIN and a Vault that opens each have a shape of their own. It is the phone's own vibration, so the phone's own setting is the switch.",
     "The Vault is on the page you land on. A button under Today and Search, with the lock on it and whether it is locked or how many notes are behind the PIN; tap it and it is the same as the lock in the rail."
   ],
   "history": [
+    {
+      "version": "1.0.36",
+      "date": "2026-11-20",
+      "notes": [
+        "The line you are typing now sits a clear space above the keyboard. A phone can hand the keys over in three different ways - a browser shrinking what it shows, the app shortening the page for them, or the keys simply laid over the top - and the page only ever measured the first, so on a phone that shortens itself the writing was left on the last pixel before the keys. All three are measured now, and the line you are on keeps three lines of air under it, the way a note app keeps it.",
+        "The bottom rail and the back key step out of the way while the keys are up, and the room they were holding goes to the note instead, so there is more page to write on with the keyboard open.",
+        "This one is in the page itself, so it arrives by itself the next time UNote opens - no new APK needed."
+      ]
+    },
     {
       "version": "1.0.35",
       "date": "2026-11-20",
