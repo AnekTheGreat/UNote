@@ -211,6 +211,7 @@ async function unlockDialog(after) {
         await kvSet('vaultguard', { tries: 0, until: 0 });
         await decryptVault();
         const kept = await flushVaultPending();
+        HAP.ok();
         closeDialog();
         toast(kept
           ? 'Vault open. ' + kept + (kept === 1 ? ' note you had written while it was locked is saved now.' : ' notes you had written while it was locked are saved now.')
@@ -221,6 +222,7 @@ async function unlockDialog(after) {
         g.tries = (g.tries || 0) + 1;
         if (g.tries >= 5) { g.until = nowMs() + Math.min(120000, 15000 * (g.tries - 4)); g.tries = 0; }
         await kvSet('vaultguard', g);
+        HAP.no();
         ui.bad(g.until ? 'Wrong PIN. Locked for a moment.' : 'Wrong PIN (' + (5 - (g.tries || 0)) + ' tries left)');
       }
     },
@@ -1294,9 +1296,10 @@ function noteMenu() {
       document.body.appendChild(a2); a2.click(); a2.remove();
       setTimeout(() => URL.revokeObjectURL(url), 3000);
     }
-    if (a === 'trash') { n.deleted = nowMs(); await saveNote(n); S.current = null; renderDoc(); renderSide(); toast('Moved to trash.'); }
+    if (a === 'trash') { HAP.press(); n.deleted = nowMs(); await saveNote(n); S.current = null; renderDoc(); renderSide(); toast('Moved to trash.'); }
     if (a === 'restore') { n.deleted = 0; await saveNote(n); renderDoc(); renderSide(); toast('Restored.'); }
     if (a === 'purge') {
+      HAP.press();
       await dbDel('notes', n.id);
       S.notes = S.notes.filter(x => x.id !== n.id);
       S.vault.plain = S.vault.plain.filter(x => x.id !== n.id);
@@ -1322,6 +1325,7 @@ async function moveToVault(n) {
   await decryptVault();
   S.current = findNote(v.id) || v;
   renderSide(); renderDoc();
+  HAP.ok();
   toast('Moved into the Vault.');
 }
 
@@ -1412,6 +1416,20 @@ function keepCaretVisible() {
   if (y < top) ed.scrollTop = Math.max(0, y - lh * 0.5);
   else if (y + lh * 2.5 > top + h) ed.scrollTop = y + lh * 2.5 - h;   // the line you are on, with air under it
 }
+/* 1.0.35 - the field the keys are for is brought into the part of the page that is left. The note
+   editor keeps its caret in sight already; this is for the fields inside a sheet - a folder name, a
+   reminder, a search, an import code - where the page does not scroll and the box was left under
+   the keys. A field inside a scroller is scrolled inside it, and anything else is moved into view
+   as a whole, so the words being typed are on the screen and not behind the keyboard. */
+function keepFieldVisible(el) {
+  if (!el || el.id === 'ed') return;
+  if (!el.matches || !el.matches('input,textarea,[contenteditable="true"]')) return;
+  const sc = el.closest('.dlgbody,.pallist,#doc');
+  if (sc && sc.scrollHeight > sc.clientHeight + 4) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+  const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  const r = el.getBoundingClientRect();
+  if (r.bottom > vh - 16 || r.top < 16) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
 function watchKeyboard() {
   const vv = window.visualViewport;
   /* 1.0.33 - the line you are on is kept in sight while you type it, the way the journal does it:
@@ -1440,7 +1458,9 @@ function watchKeyboard() {
   };
   vv.addEventListener('resize', apply);
   vv.addEventListener('scroll', apply);
-  document.addEventListener('focusin', () => setTimeout(apply, 80));   // the keys arrive after the tap
+      /* the keys arrive after the tap: give them their moment, then leave the field they are for
+       where it can be seen */
+    document.addEventListener('focusin', e => setTimeout(() => { apply(); keepFieldVisible(e.target); }, 80));
   document.addEventListener('focusout', () => setTimeout(apply, 80));
   apply();
 }
@@ -1453,7 +1473,24 @@ document.addEventListener('contextmenu', e => {
   e.preventDefault();
 });
 
+/* One listener rather than a call in every handler: the app has hundreds of buttons and the ones
+   worth feeling are all here. A click only happens when a finger landed and lifted without
+   scrolling the page, so a flick through the list stays silent. */
+function wireHaptics() {
+  if (wireHaptics.done) return;
+  wireHaptics.done = 1;
+  document.addEventListener('click', e => {
+    const t = e.target;
+    if (!t || !t.closest) return;
+    const el = t.closest('button,.rbtn,.navrow,.noteitem,.folderrow,.tagchip,.homecard,.listrow,.palitem,[data-note],[data-home],[data-nav],[data-go],[data-sel]');
+    if (!el || el.disabled || el.dataset.nohap) return;
+    if (el.closest('.pinpad') || el.classList.contains('tagchip') || el.classList.contains('palitem') || el.classList.contains('noteitem')) { HAP.tick(); return; }
+    HAP.tap();
+  }, true);
+}
+
 async function boot() {
+  wireHaptics();
   await openDB();
   const saved = await kvGet('settings');
   if (saved) Object.assign(S.settings, saved);

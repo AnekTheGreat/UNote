@@ -9,6 +9,11 @@
          the recording stays in the note. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- 1.0.35 - a tap is felt. Without this the WebView refuses navigator.vibrate and every
+         piece of the app's feedback is silent. Nothing is read, recorded or sent: the phone
+         buzzes for as long as the tap lasts and no longer. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Reminders. A reminder is a line of text and a time; the phone's own alarm clock rings it, so
          it has to be allowed to notify, to arm an alarm, and to arm them again after a reboot. The
          page asks for the notification permission the first time a reminder is written. Nothing

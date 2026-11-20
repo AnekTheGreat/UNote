@@ -671,7 +671,7 @@ function wireNotePress() {
       if (selRow) selRow.classList.remove('holding');
       selRow = null;
       selSuppress = true;
-      try { if (navigator.vibrate) navigator.vibrate(14); } catch (err) {}
+      HAP.press();
       selEnter(held);
       toast('Tap notes to add them, then pick an action.', 2600);
     }, SEL_HOLD_MS);
@@ -740,6 +740,12 @@ function renderHome() {
         '<button class="home-btn primary" data-home="new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New note</button>' +
         '<button class="home-btn" data-home="daily"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>Today</button>' +
         '<button class="home-btn" data-home="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Search</button>' +
+        /* 1.0.35 - the Vault is a way in from the page you land on, not a room you have to remember
+           the way to. It carries its own state, so the page says whether a PIN stands in front of it
+           and how much is behind it. */
+        '<button class="home-btn vault" data-home="vault"><svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><circle cx="12" cy="15.5" r="1.3"/></svg>Vault' +
+          (S.vault.on ? '<span class="hb-n">' + (S.vault.key ? vaultN : 'locked') + '</span>' : '') +
+        '</button>' +
       '</div>' +
       (recent.length ? '<div class="home-sec">Pick up where you left off</div><div class="home-list">' + recent.map(card).join('') + '</div>' : '') +
       (favs.length ? '<div class="home-sec">Favourites</div><div class="home-chips">' +
@@ -768,6 +774,7 @@ function renderHome() {
       if (h.dataset.home === 'new') { closeSide(); createNote({}); }
       else if (h.dataset.home === 'daily') dailyNote();
       else if (h.dataset.home === 'search') palette('search');
+      else if (h.dataset.home === 'vault') { closeSide(); goVault(); }
       else if (h.dataset.home === 'remind') remindersDialog();
       return;
     }

@@ -1,11 +1,22 @@
 {
   "app": "UNote",
-  "version": "1.0.34",
-  "date": "2026-11-14",
+  "version": "1.0.35",
+  "date": "2026-11-20",
   "notes": [
-    "The way back is a key of its own at the bottom right, where a thumb already is. It is always on screen - over a settings sheet, over the search list, with nothing hidden behind it - and it is dimmed only when you are already on the home screen, where it still answers by putting the library back the way it opens. The small arrow that used to appear in the top bar is gone; one way back, in the same place every time."
+    "The keyboard finally keeps out of the way of what you are typing. A sheet with a field in it - a folder name, a reminder, a search, an import code - now sits in the part of the screen the keys leave free instead of being centred on the whole screen behind them, and the field you tapped is scrolled up into view. No more typing a line you cannot read.",
+    "The app answers in the hand. Every tap that does something gives one short tick; a note held to start a selection, a note sent to the trash, a wrong PIN and a Vault that opens each have a shape of their own. It is the phone's own vibration, so the phone's own setting is the switch.",
+    "The Vault is on the page you land on. A button under Today and Search, with the lock on it and whether it is locked or how many notes are behind the PIN; tap it and it is the same as the lock in the rail."
   ],
   "history": [
+    {
+      "version": "1.0.35",
+      "date": "2026-11-20",
+      "notes": [
+        "The keyboard finally keeps out of the way of what you are typing. A sheet with a field in it - a folder name, a reminder, a search, an import code - now sits in the part of the screen the keys leave free instead of being centred on the whole screen behind them, and the field you tapped is scrolled up into view. No more typing a line you cannot read.",
+        "The app answers in the hand. Every tap that does something gives one short tick; a note held to start a selection, a note sent to the trash, a wrong PIN and a Vault that opens each have a shape of their own. It is the phone's own vibration, so the phone's own setting is the switch.",
+        "The Vault is on the page you land on. A button under Today and Search, with the lock on it and whether it is locked or how many notes are behind the PIN; tap it and it is the same as the lock in the rail."
+      ]
+    },
     {
       "version": "1.0.34",
       "date": "2026-11-14",
