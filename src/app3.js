@@ -1355,6 +1355,15 @@ function closeSide() { $('#side').classList.remove('open'); updateBack(); }
    they are up now, and paintKeys is the only place that says it. */
 const KEYSTATE = { keys: 0, app: 0, fit: 0, rest: 0 };
 
+/* 1.0.37 - the fourth case, and the one no measurement can reach: nothing is said at all. On a phone
+   whose app never shortened the page for the keys and whose browser never moved visualViewport, all
+   three numbers above stay zero, so the page believed no keys were up and the line being typed sat
+   exactly where it was - underneath them. A phone with a field being typed into is taken to have its
+   keys up, whether or not anybody said so, and the room they take is kept for them either way. */
+function keysExpected() {
+  return !!(typingSomewhere() && window.innerWidth < 700);
+}
+
 /* 1.0.23 - the room above the page. The app hands over the real heights of the phone's bars in
    CSS pixels; a browser supplies env(); a copy running under an older app gets nothing at all,
    which is what left the top row under the clock. So a phone always keeps at least a status
@@ -1412,7 +1421,9 @@ function caretY(ed) {
   m.remove();
   return y;
 }
-function keysAreUp() { return KEYSTATE.keys > 0 || KEYSTATE.app > 0 || KEYSTATE.fit > 0; }
+function keysAreUp() {
+  return KEYSTATE.keys > 0 || KEYSTATE.app > 0 || KEYSTATE.fit > 0 || keysExpected();
+}
 function paintKeys() {
   const d = document.documentElement.style;
   const cover = Math.max(KEYSTATE.keys, KEYSTATE.app);   // keyboards laid over the page
@@ -1439,8 +1450,19 @@ function keepCaretVisible() {
      couple of lines a long note reads with. */
   const air = lh * (keysAreUp() ? 3 : 2.5);
   const top = ed.scrollTop, h = ed.clientHeight;
+  /* 1.0.37 - the last line of the area that is still on screen. When the page was shortened for the
+     keys - by the browser into --kb, or by the app itself - that is its own bottom. When nothing
+     was said, the writing keeps the room a keyboard takes on a phone, so the line you are on ends
+     up in the top half of what you can see instead of under the keys. */
+  const bottom = h - keyBand(h);
   if (y < top) ed.scrollTop = Math.max(0, y - lh * 0.5);
-  else if (y + air > top + h) ed.scrollTop = y + air - h;   // the line you are on, with air under it
+  else if (y + air > top + bottom) ed.scrollTop = y + air - bottom;   // the line you are on, with air
+}
+/* How much of the writing area the keys are over, in that area's own pixels. Nothing when the page
+   already ends above them; a keyboard's worth when nobody has said where they are. */
+function keyBand(h) {
+  if (KEYSTATE.keys > 0 || KEYSTATE.fit > 0) return 0;
+  return keysExpected() ? Math.round(h * 0.6) : 0;
 }
 /* 1.0.35 - the field the keys are for is brought into the part of the page that is left. The note
    editor keeps its caret in sight already; this is for the fields inside a sheet - a folder name, a
@@ -1462,10 +1484,18 @@ function watchKeyboard() {
      every keystroke and every move of the caret scrolls the note so that line sits above the bottom,
      with the air from the stylesheet under it. Relying on the phone to do it only ever brought the
      line to the very edge. */
-  const nudge = () => { const a = document.activeElement; if (a && a.id === 'ed') keepCaretVisible(); };
+  /* 1.0.37 - every keystroke and every move of the caret measures again, not only a change of focus.
+     A tap that only moves the caret inside a field that already has it never focuses anything, so
+     the room the keys take could be left unpainted with the keys already on screen. */
+  const nudge = () => {
+    const a = document.activeElement;
+    if (!a || a.id !== 'ed') return;
+    measure();
+    keepCaretVisible();
+  };
   if (!watchKeyboard.wired) {
     watchKeyboard.wired = 1;
-    document.addEventListener('input', e => { if (e.target && e.target.id === 'ed') keepCaretVisible(); }, true);
+    document.addEventListener('input', nudge, true);
     document.addEventListener('selectionchange', nudge);
     document.addEventListener('keyup', nudge);
   }
@@ -1496,7 +1526,11 @@ function watchKeyboard() {
   window.addEventListener('orientationchange', () => setTimeout(() => { KEYSTATE.rest = window.innerHeight; measure(); }, 400));
   /* the keys arrive after the tap: give them their moment, then leave the field they are for where
      it can be seen */
-  document.addEventListener('focusin', e => setTimeout(() => { measure(); keepFieldVisible(e.target); }, 80));
+  document.addEventListener('focusin', e => setTimeout(() => {
+    measure();
+    if (e.target && e.target.id === 'ed') keepCaretVisible();
+    keepFieldVisible(e.target);
+  }, 80));
   document.addEventListener('focusout', () => setTimeout(measure, 80));
   measure();
 }

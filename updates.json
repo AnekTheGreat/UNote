@@ -1,8 +1,11 @@
 {
   "app": "UNote",
-  "version": "1.0.36",
+  "version": "1.0.37",
   "date": "2026-11-20",
   "notes": [
+    "The line you are typing is now kept above the keyboard on the phones that never said the keys had come up. UNote stopped waiting to be told: while you are writing on a phone it keeps better than half a screen of blank lines under the last one, and scrolls the line you are on into the top half of what you can see. However the phone hands the keys over - a shorter page, a shorter screen, or simply laid on top of everything - the words you are writing end above them, with air under them.",
+    "The back key is the size of the keys beside it. It was a taller tile in the rail's row, which left one key looking out of place; it is 40 pixels square now, in the same row, with the rail giving up exactly the room it takes.",
+    "This one is in the page itself, so it arrives by itself the next time UNote opens - no new APK needed.",
     "The line you are typing now sits a clear space above the keyboard. A phone can hand the keys over in three different ways - a browser shrinking what it shows, the app shortening the page for them, or the keys simply laid over the top - and the page only ever measured the first, so on a phone that shortens itself the writing was left on the last pixel before the keys. All three are measured now, and the line you are on keeps three lines of air under it, the way a note app keeps it.",
     "The bottom rail and the back key step out of the way while the keys are up, and the room they were holding goes to the note instead, so there is more page to write on with the keyboard open.",
     "This one is in the page itself, so it arrives by itself the next time UNote opens - no new APK needed.",
@@ -11,6 +14,15 @@
     "The Vault is on the page you land on. A button under Today and Search, with the lock on it and whether it is locked or how many notes are behind the PIN; tap it and it is the same as the lock in the rail."
   ],
   "history": [
+    {
+      "version": "1.0.37",
+      "date": "2026-11-20",
+      "notes": [
+        "The line you are typing is now kept above the keyboard on the phones that never said the keys had come up. UNote stopped waiting to be told: while you are writing on a phone it keeps better than half a screen of blank lines under the last one, and scrolls the line you are on into the top half of what you can see. However the phone hands the keys over - a shorter page, a shorter screen, or simply laid on top of everything - the words you are writing end above them, with air under them.",
+        "The back key is the size of the keys beside it. It was a taller tile in the rail's row, which left one key looking out of place; it is 40 pixels square now, in the same row, with the rail giving up exactly the room it takes.",
+        "This one is in the page itself, so it arrives by itself the next time UNote opens - no new APK needed."
+      ]
+    },
     {
       "version": "1.0.36",
       "date": "2026-11-20",

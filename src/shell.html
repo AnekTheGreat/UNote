@@ -360,7 +360,7 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
     position:fixed;bottom:0;left:0;right:0;height:calc(var(--rail) + var(--safe-b));flex-direction:row;justify-content:space-around;
     /* 1.0.34 - the right-hand 64px belongs to the back key, so the rail's own icons stop
        short of it: the settings gear sits beside the key, never under it. */
-    padding:0 64px var(--safe-b) 6px;border-right:0;border-top:1px solid var(--line);z-index:30;
+    padding:0 56px var(--safe-b) 6px;border-right:0;border-top:1px solid var(--line);z-index:30;
     background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(14px);
   }
   .rspacer,#railLock{display:none}
@@ -401,9 +401,12 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   /* 1.0.34 - the back key: right-hand edge, above the rail, above dialogs (41) and the
      search sheet (41), below a toast (60). The rail gives up its right-hand corner so the
      key never sits on top of the settings icon. */
-  #railBack{position:fixed;right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(7px + var(--safe-b));
-    z-index:46;width:46px;height:calc(var(--rail) - 12px);min-height:40px;display:grid;place-items:center;
-    border-radius:14px;border:1px solid var(--glass-line);color:var(--ink);
+  /* 1.0.37 - the size of the keys beside it. It was a taller tile than the rail's own buttons, which
+     made the row look like it had one key out of place; it is the same 40 the others are now, in the
+     same row, with the rail giving up exactly the room it takes. */
+  #railBack{position:fixed;right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(9px + var(--safe-b));
+    z-index:46;width:40px;height:40px;display:grid;place-items:center;
+    border-radius:12px;border:1px solid var(--glass-line);color:var(--ink);
     background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(20px) saturate(150%)}
   #railBack svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   #railBack:active{transform:scale(.94)}
@@ -697,7 +700,14 @@ mark{background:rgba(124,92,255,.28);color:inherit;border-radius:3px;padding:0 2
   /* 1.0.36 - a real band of air under the line being typed, not a sliver. The caret is scrolled to
      sit inside this band, so the words you are writing are a whole space above the keys the way a
      note app keeps them, and the end of a note can be read without being pulled to the edge. */
-  body.keys #ed,body.keys #pv{padding-bottom:max(120px,22vh)}
+  /* 1.0.37 - room for the keys even when the phone never says they are there. A phone that neither
+     shortens the page nor moves visualViewport leaves the writing exactly where it was, so there was
+     nothing to scroll and the line being typed stayed under the keys. The writing area now keeps
+     better than half a screen of blank lines under its last one while it has the caret, which is
+     the room the caret is scrolled up through - so the words you are writing always end above the
+     keys, however the phone chose to tell the page about them (or not). */
+  body.keys #ed{padding-bottom:max(160px,60dvh)}
+  body.keys #pv{padding-bottom:max(120px,22vh)}
   body.keys #doc{padding-bottom:0}
   .home-chips{display:flex;flex-wrap:wrap;gap:6px}
   /* A wide window has room for one row of three; a phone gives New note the row to itself and puts
