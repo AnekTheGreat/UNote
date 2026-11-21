@@ -1559,8 +1559,27 @@ function wireHaptics() {
   }, true);
 }
 
+/* 1.0.38 - the keys answer too. Every character typed into a note is a tick of its own, the way a
+   phone's own keyboard gives one, and never faster than a thumb can feel them: a fast typist gets
+   one per character, a key held down or a paste gets one pulse instead of a hum. The note's title
+   counts as typing; a search box or a PIN pad keeps its own tap. */
+function wireKeyHaptics() {
+  if (wireKeyHaptics.done) return;
+  wireKeyHaptics.done = 1;
+  let last = 0;
+  const typing = t => !!(t && (t.id === 'ed' || t.id === 'title'));
+  document.addEventListener('input', e => {
+    if (!typing(e.target)) return;
+    const at = nowMs();
+    if (at - last < 30) return;          // ten a second is as fast as a thumb can feel them
+    last = at;
+    HAP.key();
+  }, true);
+}
+
 async function boot() {
   wireHaptics();
+  wireKeyHaptics();
   await openDB();
   const saved = await kvGet('settings');
   if (saved) Object.assign(S.settings, saved);

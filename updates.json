@@ -1,8 +1,11 @@
 {
   "app": "UNote",
-  "version": "1.0.37",
-  "date": "2026-11-20",
+  "version": "1.0.38",
+  "date": "2026-11-21",
   "notes": [
+    "The hand answers now, for real. Every tap in UNote asked the page to vibrate, and the WebView the app runs in has no vibrate of its own, so not one tap, not a key on the PIN pad, not a wrong PIN and not the Vault opening was ever felt. The app carries its own buzzer now, the phone's own motor behind it: a tap, a note sent to the trash, a Vault that opens and a wrong PIN are all felt in the hand, and the phone's touch feedback setting is still the switch.",
+    "The keys answer too. Every character typed into a note or its title gives one short tick, the way a phone's own keyboard does, and never faster than a thumb can feel them - a key held down or a paste is one pulse, not a hum.",
+    "Part of this one is in the app itself: install the new APK from the releases page for the hand to answer. The page part - the keystrokes - arrives by itself. The notes you already have stay exactly where they are.",
     "The line you are typing is now kept above the keyboard on the phones that never said the keys had come up. UNote stopped waiting to be told: while you are writing on a phone it keeps better than half a screen of blank lines under the last one, and scrolls the line you are on into the top half of what you can see. However the phone hands the keys over - a shorter page, a shorter screen, or simply laid on top of everything - the words you are writing end above them, with air under them.",
     "The back key is the size of the keys beside it. It was a taller tile in the rail's row, which left one key looking out of place; it is 40 pixels square now, in the same row, with the rail giving up exactly the room it takes.",
     "This one is in the page itself, so it arrives by itself the next time UNote opens - no new APK needed.",
@@ -14,6 +17,15 @@
     "The Vault is on the page you land on. A button under Today and Search, with the lock on it and whether it is locked or how many notes are behind the PIN; tap it and it is the same as the lock in the rail."
   ],
   "history": [
+    {
+      "version": "1.0.38",
+      "date": "2026-11-21",
+      "notes": [
+        "The hand answers now, for real. Every tap in UNote asked the page to vibrate, and the WebView the app runs in has no vibrate of its own, so not one tap, not a key on the PIN pad, not a wrong PIN and not the Vault opening was ever felt. The app carries its own buzzer now, the phone's own motor behind it: a tap, a note sent to the trash, a Vault that opens and a wrong PIN are all felt in the hand, and the phone's touch feedback setting is still the switch.",
+        "The keys answer too. Every character typed into a note or its title gives one short tick, the way a phone's own keyboard does, and never faster than a thumb can feel them - a key held down or a paste is one pulse, not a hum.",
+        "Part of this one is in the app itself: install the new APK from the releases page for the hand to answer. The page part - the keystrokes - arrives by itself. The notes you already have stay exactly where they are."
+      ]
+    },
     {
       "version": "1.0.37",
       "date": "2026-11-20",

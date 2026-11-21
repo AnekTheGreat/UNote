@@ -2,7 +2,7 @@
 /* UNote - part 1: helpers, storage, crypto, markdown, rendering. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-const VERSION = '1.0.37';
+const VERSION = '1.0.38';
 const APP = 'UNote';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -26,12 +26,31 @@ function debounce(fn, ms) { let t; return function () { const a = arguments, c =
    the only channel a page has; a desktop browser has none and a WebView without the permission
    refuses, so every call goes through here and simply does nothing when the phone is not there to
    answer. The phone's own vibration setting is the switch - silenced there, silent here. */
+/* 1.0.38 - the page was asking a phone that could not hear it. navigator.vibrate is not in the
+   WebView the app runs in, so every call above answered nothing: not one tap, not the PIN pad, not
+   the Vault opening, not a wrong PIN. The app now carries a buzzer of its own
+   (window.UNoteAlert.buzz) with the phone's Vibrator behind it, and that is what is used when it is
+   there; a browser still gets navigator.vibrate. */
 const HAP = (() => {
-  const can = () => { try { return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'; } catch (e) { return false; } };
-  const fire = p => { if (!can()) return; try { navigator.vibrate(p); } catch (e) {} };
+  const buzzer = () => {
+    try {
+      const a = window.UNoteAlert;
+      return (a && typeof a.buzz === 'function') ? a : null;
+    } catch (e) { return null; }
+  };
+  const fire = p => {
+    const a = buzzer();
+    if (a) {
+      try { a.buzz(Array.isArray(p) ? p.join(',') : String(p)); return; } catch (e) { /* fall through */ }
+    }
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(p);
+    } catch (e) { /* a phone with no motor is a phone that stays still */ }
+  };
   return {
     tap: () => fire(9),                 // a button, a row, a note
     tick: () => fire(6),                // a key on the pad, a chip, a match in the palette
+    key: () => fire(4),                 // one character typed into a note
     press: () => fire(22),              // a long press takes hold, or a note is binned
     ok: () => fire([12, 40, 12]),       // the Vault opened, a note was sealed
     no: () => fire([26, 60, 26]),       // a wrong PIN, a refused action

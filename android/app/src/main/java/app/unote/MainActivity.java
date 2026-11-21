@@ -8,11 +8,15 @@ import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -337,6 +341,55 @@ public class MainActivity extends Activity {
      *  with UNote shut, and the notification permission it needs to be heard. A page cannot wake a
      *  phone that is not running - that is the whole reason this is not done in JavaScript. */
     private class Alerts {
+
+        /** 1.0.38 - the hand answers. A WebView has no navigator.vibrate of its own, so every tick
+         *  the page asked for - a tap, a key on the PIN pad, a wrong PIN, the Vault opening, every
+         *  character typed - was asked of a phone that never heard it. This is the phone's own
+         *  Vibrator, one length or a comma-separated pattern of on, off, on. The phone's touch
+         *  feedback setting stays the switch: silenced there, silent here. */
+        @JavascriptInterface
+        public void buzz(String pattern) {
+            if (pattern == null) {
+                return;
+            }
+            try {
+                if (Settings.System.getInt(getContentResolver(),
+                        Settings.System.HAPTIC_FEEDBACK_ENABLED, 1) == 0) {
+                    return;
+                }
+            } catch (Exception ignored) {
+                // a phone that will not say keeps its motor on
+            }
+            try {
+                String p = pattern.trim();
+                if (p.isEmpty()) {
+                    return;
+                }
+                String[] parts = p.split(",");
+                final long[] times = new long[parts.length];
+                for (int i = 0; i < parts.length; i++) {
+                    times[i] = Math.max(1L, Math.round(Double.parseDouble(parts[i].trim())));
+                }
+                final Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (v == null || !v.hasVibrator()) {
+                    return;
+                }
+                if (times.length == 1) {
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        v.vibrate(VibrationEffect.createOneShot(times[0],
+                                VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        v.vibrate(times[0]);
+                    }
+                } else if (Build.VERSION.SDK_INT >= 26) {
+                    v.vibrate(VibrationEffect.createWaveform(times, -1));
+                } else {
+                    v.vibrate(times, -1);
+                }
+            } catch (Exception ignored) {
+                // no motor, or a pattern that is not one: a still phone, never a crash
+            }
+        }
 
         @JavascriptInterface
         public void ask() {
